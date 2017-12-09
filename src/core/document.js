@@ -182,7 +182,8 @@ class Page {
     });
   }
 
-  getOperatorList({ handler, task, intent, renderInteractiveForms, }) {
+  getOperatorList({ handler, task, intent, renderInteractiveForms,
+                    combinedInitialTransform, }) {
     const contentStreamPromise = this.pdfManager.ensure(this,
                                                         'getContentStream');
     const resourcesPromise = this.loadResources([
@@ -204,6 +205,7 @@ class Page {
       builtInCMapCache: this.builtInCMapCache,
       options: this.evaluatorOptions,
       pdfFunctionFactory: this.pdfFunctionFactory,
+      combinedInitialTransform,
     });
 
     const dataPromises = Promise.all([contentStreamPromise, resourcesPromise]);
