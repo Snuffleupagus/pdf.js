@@ -1977,7 +1977,11 @@ class WorkerTransport {
 
       const [id, pageIndex, type, imageData] = data;
       const pageProxy = this.pageCache[pageIndex];
-      if (pageProxy.objs.has(id)) {
+
+      if (id && pageProxy.objs.has(id)) {
+        if (type === 'ImageCacheRemove') {
+          pageProxy.objs.remove(id);
+        }
         return;
       }
 
@@ -2011,6 +2015,13 @@ class WorkerTransport {
               imageData.data.length > MAX_IMAGE_SIZE_TO_STORE) {
             pageProxy.cleanupAfterRender = true;
           }
+          break;
+        case 'ImageDownsized':
+          // Prevent re-rendering errors, after the scale has been changed,
+          // by not storing any images and/or masks that were downsized.
+          pageProxy.cleanupAfterRender = true;
+          break;
+        case 'ImageCacheRemove':
           break;
         default:
           throw new Error(`Got unknown object type ${type}`);
@@ -2329,6 +2340,12 @@ class PDFObjects {
     obj.resolved = true;
     obj.data = data;
     obj.capability.resolve(data);
+  }
+
+  remove(objId) {
+    if (this._objs[objId]) {
+      delete this._objs[objId];
+    }
   }
 
   clear() {
