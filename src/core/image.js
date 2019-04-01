@@ -82,36 +82,27 @@ var PDFImage = (function PDFImageClosure() {
   /**
    * Downsizes an image mask.
    * @param {TypedArray} src - The source buffer.
-   * @param {Number} w1 - Original width.
-   * @param {Number} h1 - Original height.
-   * @param {Number} w2 - New width.
-   * @param {Number} h2 - New height.
+   * @param {Number} width - Original width.
+   * @param {Number} height - Original height.
+   * @param {Object} maxDimensions.
    * @returns {Object} Downsized image mask buffer.
    */
-  function downsizeImageMask(src, w1, h1, w2, h2) {
-    const resizeFactorX = Math.ceil(w1 / w2);
-    const resizeFactorY = Math.ceil(h1 / h2);
-    if (resizeFactorX === 1 && resizeFactorY === 1) {
-      return null;
-    }
-    const packedWidth = (w1 + 7) >> 3;
-    const xHop = resizeFactorX >> 3;
-    const yHop = resizeFactorY;
-    const bitHop = resizeFactorX & 7;
+  function downsizeImageMask(src, width, height, maxDimensions) {
+    const { newWidth, newHeight, widthFactor, heightFactor, } = maxDimensions;
 
-    const resizedWidth = Math.ceil(w1 / resizeFactorX);
-    const resizedHeight = Math.ceil(h1 / resizeFactorY);
+    const packedWidth = (width + 7) >> 3;
+    const xHop = widthFactor >> 3, yHop = heightFactor;
+    const bitHop = widthFactor & 7;
 
-    const destWidth = (resizedWidth + 7) >> 3;
-    const destHeight = resizedHeight;
+    const destWidth = (newWidth + 7) >> 3, destHeight = newHeight;
     const dest = new Uint8ClampedArray(destWidth * destHeight);
 
     let destIndex = 0;
-    for (let i = 0; i < h1; i += yHop) {
+    for (let i = 0; i < height; i += yHop) {
       let val = 0, destMask = 128;
       let srcIndex = i * packedWidth;
       let srcMask = 0x8080; // hi and low bytes are the same
-      for (let j = 0; j < resizedWidth; j++) {
+      for (let j = 0; j < newWidth; j++) {
         val |= (src[srcIndex] & srcMask) ? destMask : 0;
         destMask >>= 1;
         if (!destMask) {
@@ -135,7 +126,12 @@ var PDFImage = (function PDFImageClosure() {
       }
     }
 
-    return { dest, resizedWidth, resizedHeight, };
+    return {
+      data: dest,
+      width: newWidth,
+      height: newHeight,
+      downsized: true,
+    };
   }
 
   function PDFImage({ xref, res, image, isInline = false, smask = null,
@@ -324,7 +320,7 @@ var PDFImage = (function PDFImageClosure() {
 
   PDFImage.createMask = function({ imgArray, width, height,
                                    imageIsFromDecodeStream, inverseDecode,
-                                   resizeWidth, resizeHeight, }) {
+                                   maxDimensions = null, }) {
     if (typeof PDFJSDev === 'undefined' ||
         PDFJSDev.test('!PRODUCTION || TESTING')) {
       assert(imgArray instanceof Uint8ClampedArray,
@@ -365,19 +361,9 @@ var PDFImage = (function PDFImageClosure() {
       }
     }
 
-    if (resizeWidth < width || resizeHeight < height) {
-      const resizedImageObj = downsizeImageMask(data, width, height,
-                                                resizeWidth, resizeHeight);
-      if (resizedImageObj) {
-        return {
-          data: resizedImageObj.dest,
-          width: resizedImageObj.resizedWidth,
-          height: resizedImageObj.resizedHeight,
-          downsized: true,
-        };
-      }
+    if (maxDimensions) {
+      return downsizeImageMask(data, width, height, maxDimensions);
     }
-
     return { data, width, height, downsized: false, };
   };
 

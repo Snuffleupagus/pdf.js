@@ -14,7 +14,7 @@
  */
 /* eslint no-var: error */
 
-import { assert, OPS, warn } from '../shared/util';
+import { assert, OPS, Util, warn } from '../shared/util';
 import { ColorSpace } from './colorspace';
 import { JpegStream } from './jpeg_stream';
 import { Stream } from './stream';
@@ -87,6 +87,8 @@ const ImageCacheKind = {
   NEEDS_RESIZING: 2,
 };
 
+const MIN_IMAGE_PIXELS_TO_DOWNSIZE = 1000000;
+
 class ImageCache {
   constructor({ handler, pageIndex, transform = null, }) {
     this._handler = handler;
@@ -126,7 +128,52 @@ class ImageCache {
     if (cacheEntry === undefined) {
       return ImageCacheKind.NON_EXISTING;
     }
+    const { width, height, downsized, } = cacheEntry.dimensions;
+
+    if (downsized) {
+      const [maxWidth, maxHeight] = this._maxDimensions(ctm, width, height);
+
+      // An already downsized, and cached, image will need to be re-parsed.
+      if (maxWidth > width || maxHeight > height) {
+        return ImageCacheKind.NEEDS_RESIZING;
+      }
+    }
     return ImageCacheKind.EXISTING;
+  }
+
+  getMaxDimensions({ width, height, ctm, }) {
+    if (typeof PDFJSDev === 'undefined' ||
+        PDFJSDev.test('!PRODUCTION || TESTING')) {
+      assert(Number.isInteger(width) && width > 0,
+             'ImageCache.getMaxDimensions: Non-integer `width` parameter.');
+      assert(Number.isInteger(height) && height > 0,
+             'ImageCache.getMaxDimensions: Non-integer `height` parameter.');
+
+      assert(typeof ctm === 'object' && ctm.length === 6,
+             'ImageCache.getMaxDimensions: Invalid `ctm` parameter.');
+    }
+
+    const [maxWidth, maxHeight] =
+      this._maxDimensions(ctm, width, height, /* checkMinSize = */ true);
+
+    // We only support downsizing images, hence don't upscale smaller ones.
+    if (maxWidth >= width && maxHeight >= height) {
+      return null;
+    }
+    const widthFactor = Math.ceil(width / maxWidth);
+    const heightFactor = Math.ceil(height / maxHeight);
+
+    if (widthFactor <= 1 && heightFactor <= 1) {
+      return null;
+    }
+    const newWidth = Math.ceil(width / widthFactor);
+    const newHeight = Math.ceil(height / heightFactor);
+
+    // Ensure that downsized images and/or masks are not stored on the
+    // main-thread, to prevent re-rendering errors if the scale changes.
+    this._handler.send('obj', [null, this._pageIndex, 'ImageDownsized', null]);
+
+    return { newWidth, newHeight, widthFactor, heightFactor, };
   }
 
   set({ key, fn, args, dimensions, }) {
@@ -176,6 +223,18 @@ class ImageCache {
 
   clear() {
     this._cache = Object.create(null);
+  }
+
+  _maxDimensions(ctm, width, height, checkMinSize = false) {
+    if (!this._transform) {
+      return [width, height];
+    }
+    // Only attempt to downsize "large" images, to save resources.
+    if (checkMinSize && width * height <= MIN_IMAGE_PIXELS_TO_DOWNSIZE) {
+      return [width, height];
+    }
+    const combinedTransform = Util.transform(this._transform, ctm);
+    return Util.singularValueDecompose2dScale(combinedTransform);
   }
 }
 

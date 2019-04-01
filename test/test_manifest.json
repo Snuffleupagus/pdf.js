@@ -1688,6 +1688,15 @@
        "lastPage": 6,
        "type": "eq"
     },
+    {  "id": "issue8076",
+       "file": "pdfs/issue8076.pdf",
+       "md5": "bdb05c162cdde0e8caa6a4641f195a39",
+       "rounds": 1,
+       "link": true,
+       "firstPage": 16,
+       "lastPage": 16,
+       "type": "eq"
+    },
     {  "id": "issue8088",
        "file": "pdfs/issue8088.pdf",
        "md5": "5bbc33c7433799487518eb0d8094348c",

@@ -328,24 +328,13 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
                                       /* forceClamped = */ true);
         var decode = dict.getArray('Decode', 'D');
 
-        let resizeWidth = width, resizeHeight = height;
-        if (this.combinedInitialTransform) {
-          const combinedTransform =
-            Util.transform(this.combinedInitialTransform, ctm);
-          const scaledDimensions =
-            Util.singularValueDecompose2dScale(combinedTransform);
-          resizeWidth = scaledDimensions[0];
-          resizeHeight = scaledDimensions[1];
-        }
-
         imgData = PDFImage.createMask({
           imgArray,
           width,
           height,
-          resizeWidth,
-          resizeHeight,
           imageIsFromDecodeStream: image instanceof DecodeStream,
           inverseDecode: (!!decode && decode[0] > 0),
+          maxDimensions: imageCache.getMaxDimensions({ width, height, ctm, }),
         });
         imgData.cached = !!cacheKey;
         args = [imgData];
@@ -882,6 +871,7 @@ var PartialEvaluator = (function PartialEvaluatorClosure() {
       const imageCache = new ImageCache({
         handler: this.handler,
         pageIndex: this.pageIndex,
+        transform: this.combinedInitialTransform,
       });
 
       var xobjs = (resources.get('XObject') || Dict.empty);
