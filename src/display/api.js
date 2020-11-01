@@ -1935,13 +1935,12 @@ const PDFWorker = (function PDFWorkerClosure() {
       // Workers aren't supported in Node.js, force-disabling them there.
       isWorkerDisabled = true;
 
-      if (typeof PDFJSDev !== "undefined" && PDFJSDev.test("LIB")) {
-        fallbackWorkerSrc = "../pdf.worker.js";
-      } else {
-        fallbackWorkerSrc = "./pdf.worker.js";
-      }
-    } else if (typeof document === "object" && "currentScript" in document) {
-      const pdfjsFilePath = document.currentScript?.src;
+      fallbackWorkerSrc =
+        typeof PDFJSDev !== "undefined" && PDFJSDev.test("LIB")
+          ? "../pdf.worker.js"
+          : "./pdf.worker.js";
+    } else if (typeof document === "object") {
+      const pdfjsFilePath = document?.currentScript?.src;
       if (pdfjsFilePath) {
         fallbackWorkerSrc = pdfjsFilePath.replace(
           /(\.(?:min\.)?js)(\?.*)?$/i,
@@ -1965,13 +1964,11 @@ const PDFWorker = (function PDFWorkerClosure() {
   }
 
   function getMainThreadWorkerMessageHandler() {
-    let mainWorkerMessageHandler;
     try {
-      mainWorkerMessageHandler = globalThis.pdfjsWorker?.WorkerMessageHandler;
+      return globalThis.pdfjsWorker?.WorkerMessageHandler || null;
     } catch (ex) {
-      /* Ignore errors. */
+      return null; // Ignore errors.
     }
-    return mainWorkerMessageHandler || null;
   }
 
   // Loads worker code into main thread.
@@ -1989,7 +1986,7 @@ const PDFWorker = (function PDFWorkerClosure() {
         return mainWorkerMessageHandler;
       }
       if (typeof PDFJSDev === "undefined" || !PDFJSDev.test("PRODUCTION")) {
-        const worker = await import("pdfjs/core/worker.js");
+        const worker = await import("pdfjs/pdf.worker.js");
         return worker.WorkerMessageHandler;
       }
       if (
@@ -2116,9 +2113,11 @@ const PDFWorker = (function PDFWorkerClosure() {
             );
           }
 
-          // Some versions of FF can't create a worker on localhost, see:
-          // https://bugzilla.mozilla.org/show_bug.cgi?id=683280
-          const worker = new Worker(workerSrc);
+          const worker =
+            (typeof PDFJSDev === "undefined" || !PDFJSDev.test("PRODUCTION")) &&
+            !workerSrc.endsWith("/build/pdf.worker.js")
+              ? new Worker(workerSrc, { type: "module" })
+              : new Worker(workerSrc);
           const messageHandler = new MessageHandler("main", "worker", worker);
           const terminateEarly = () => {
             worker.removeEventListener("error", onWorkerError);

@@ -2134,7 +2134,7 @@ async function loadFakeWorker() {
     GlobalWorkerOptions.workerSrc = AppOptions.get("workerSrc");
   }
   if (typeof PDFJSDev === "undefined" || !PDFJSDev.test("PRODUCTION")) {
-    window.pdfjsWorker = await import("pdfjs/core/worker.js");
+    window.pdfjsWorker = await import("pdfjs/pdf.worker.js");
     return undefined;
   }
   return loadScript(PDFWorker.getWorkerSrc());

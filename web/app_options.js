@@ -240,7 +240,7 @@ const defaultOptions = {
     /** @type {string} */
     value:
       typeof PDFJSDev === "undefined" || !PDFJSDev.test("PRODUCTION")
-        ? "../src/worker_loader.js"
+        ? "../src/pdf.worker.js"
         : "../build/pdf.worker.js",
     kind: OptionKind.WORKER,
   },
