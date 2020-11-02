@@ -34,22 +34,6 @@ function getLookupTableFactory(initializer) {
   };
 }
 
-function getArrayLookupTableFactory(initializer) {
-  let lookup;
-  return function () {
-    if (initializer) {
-      let arr = initializer();
-      initializer = null;
-      lookup = Object.create(null);
-      for (let i = 0, ii = arr.length; i < ii; i += 2) {
-        lookup[arr[i]] = arr[i + 1];
-      }
-      arr = null;
-    }
-    return lookup;
-  };
-}
-
 class MissingDataException extends BaseException {
   constructor(begin, end) {
     super(`Missing data [${begin}, ${end})`);
@@ -444,7 +428,6 @@ export {
   collectActions,
   encodeToXmlString,
   escapePDFName,
-  getArrayLookupTableFactory,
   getInheritableProperty,
   getLookupTableFactory,
   isWhiteSpace,
