@@ -24,7 +24,6 @@ import {
   isValidScrollMode,
   isValidSpreadMode,
   MAX_AUTO_SCALE,
-  moveToEndOfArray,
   PresentationModeState,
   RendererType,
   SCROLLBAR_PADDING,
@@ -84,42 +83,57 @@ const DEFAULT_CACHE_SIZE = 10;
  */
 
 function PDFPageViewBuffer(size) {
-  const data = [];
+  // Here we rely on the fact that `Set`s preserve the insertion order.
+  const buffer = new Set();
+
   this.push = function (view) {
-    const i = data.indexOf(view);
-    if (i >= 0) {
-      data.splice(i, 1);
-    }
-    data.push(view);
-    if (data.length > size) {
-      data.shift().destroy();
+    // Move the view, when it exists, to the "end" of the buffer.
+    buffer.delete(view);
+    buffer.add(view);
+
+    if (buffer.size > size) {
+      this._destroyFirstView();
     }
   };
+
   /**
    * After calling resize, the size of the buffer will be newSize. The optional
-   * parameter pagesToKeep is, if present, an array of pages to push to the back
-   * of the buffer, delaying their destruction. The size of pagesToKeep has no
-   * impact on the final size of the buffer; if pagesToKeep has length larger
-   * than newSize, some of those pages will be destroyed anyway.
+   * parameter visiblePages is, if present, an array of pages to push to the
+   * back of the buffer, delaying their destruction. The size of visiblePages
+   * has no impact on the final size of the buffer; if visiblePages has length
+   * larger than newSize, some of those pages will be destroyed anyway.
    */
-  this.resize = function (newSize, pagesToKeep) {
+  this.resize = function (newSize, visiblePages) {
     size = newSize;
-    if (pagesToKeep) {
-      const pageIdsToKeep = new Set();
-      for (let i = 0, iMax = pagesToKeep.length; i < iMax; ++i) {
-        pageIdsToKeep.add(pagesToKeep[i].id);
+
+    if (visiblePages) {
+      const viewIdsToKeep = new Set(visiblePages.map(page => page.id)),
+        views = [...buffer.values()];
+
+      for (const curView of views) {
+        if (viewIdsToKeep.has(curView.id)) {
+          // Move the view to the "end" of the buffer.
+          buffer.delete(curView);
+          buffer.add(curView);
+        }
       }
-      moveToEndOfArray(data, function (page) {
-        return pageIdsToKeep.has(page.id);
-      });
     }
-    while (data.length > size) {
-      data.shift().destroy();
+    while (buffer.size > size) {
+      this._destroyFirstView();
     }
   };
 
   this.has = function (view) {
-    return data.includes(view);
+    return buffer.has(view);
+  };
+
+  this._destroyFirstView = function () {
+    const iterator = buffer.values(),
+      firstView = iterator.next().value;
+    if (firstView) {
+      firstView.destroy();
+      buffer.delete(firstView);
+    }
   };
 }
 
@@ -1152,7 +1166,7 @@ class BaseViewer {
    * @param {number} pageNumber
    */
   isPageCached(pageNumber) {
-    if (!this.pdfDocument || !this._buffer) {
+    if (!this.pdfDocument) {
       return false;
     }
     if (
