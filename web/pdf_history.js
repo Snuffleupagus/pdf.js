@@ -450,21 +450,30 @@ class PDFHistory {
       return;
     }
 
-    let forceReplace = false;
-    if (
+    const isDestinationVisible =
       this._destination.page >= position.first &&
-      this._destination.page <= position.page
-    ) {
-      // When the `page` of `this._destination` is still visible, do not
-      // update the browsing history when `this._destination` either:
-      //  - contains an internal destination, since in this case we
-      //    cannot ensure that the document position has actually changed.
-      //  - was set through the user changing the hash of the document.
-      if (this._destination.dest !== undefined || !this._destination.first) {
+      this._destination.page <= position.page;
+    let forceReplace = false;
+
+    // When the `page` of `this._destination` is still visible, do not
+    // update the browsing history when `this._destination` either:
+    //  - contains an internal destination, since in this case we
+    //    cannot ensure that the document position has actually changed.
+    //  - was set through the user changing the hash of the document.
+    if (this._destination.dest !== undefined) {
+      if (isDestinationVisible) {
         return;
       }
-      // To avoid "flooding" the browser history, replace the current entry.
-      forceReplace = true;
+    } else if (!this._destination.first) {
+      if (isDestinationVisible) {
+        return;
+      }
+    } else {
+      // Here `this._destination` contains a previous `this._position` entry.
+      if (isDestinationVisible) {
+        // To avoid "flooding" the browser history, replace the current entry.
+        forceReplace = true;
+      }
     }
     this._pushOrReplaceState(position, forceReplace);
   }
