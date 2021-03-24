@@ -318,7 +318,7 @@ class PDFHistory {
     if (!this._initialized || this._popStateInProgress) {
       return;
     }
-    this._tryPushCurrentPosition();
+    this._tryPushCurrentPosition({});
   }
 
   /**
@@ -416,12 +416,12 @@ class PDFHistory {
   /**
    * @private
    */
-  _tryPushCurrentPosition(temporary = false) {
+  _tryPushCurrentPosition({ temporary = false, temporaryZoom = false }) {
     if (!this._position) {
       return;
     }
     let position = this._position;
-    if (temporary) {
+    if (temporary || temporaryZoom) {
       position = Object.assign(Object.create(null), this._position);
       position.temporary = true;
     }
@@ -460,12 +460,18 @@ class PDFHistory {
     //  - contains an internal destination, since in this case we
     //    cannot ensure that the document position has actually changed.
     //  - was set through the user changing the hash of the document.
+    //
+    // Since internal destinations can also modify the zoom level, in addition
+    // to the position, ensure that we support the user *manually* changing the
+    // zoom level *after* a destination has been scrolled into view.
+    // To avoid any possible issues, e.g. dummy entries in the browser history,
+    // we limit the `temporaryZoom` parameter to *only* internal destinations.
     if (this._destination.dest !== undefined) {
-      if (isDestinationVisible) {
+      if (isDestinationVisible && !temporaryZoom) {
         return;
       }
     } else if (!this._destination.first) {
-      if (isDestinationVisible) {
+      if (isDestinationVisible || temporaryZoom) {
         return;
       }
     } else {
@@ -473,6 +479,9 @@ class PDFHistory {
       if (isDestinationVisible) {
         // To avoid "flooding" the browser history, replace the current entry.
         forceReplace = true;
+      }
+      if (temporaryZoom) {
+        return;
       }
     }
     this._pushOrReplaceState(position, forceReplace);
@@ -619,11 +628,25 @@ class PDFHistory {
       // the viewer has been idle for `UPDATE_VIEWAREA_TIMEOUT` milliseconds.
       this._updateViewareaTimeout = setTimeout(() => {
         if (!this._popStateInProgress) {
-          this._tryPushCurrentPosition(/* temporary = */ true);
+          this._tryPushCurrentPosition({ temporary: true });
         }
         this._updateViewareaTimeout = null;
       }, UPDATE_VIEWAREA_TIMEOUT);
     }
+  }
+
+  /**
+   * @private
+   */
+  _scaleChanging(evt) {
+    if (
+      !this._isPagesLoaded ||
+      this._isViewerInPresentationMode ||
+      this._popStateInProgress
+    ) {
+      return;
+    }
+    this._tryPushCurrentPosition({ temporaryZoom: true });
   }
 
   /**
@@ -718,7 +741,7 @@ class PDFHistory {
     // will end up being overwritten (given that new entries cannot be pushed
     // into the browser history when the 'unload' event has already fired).
     if (!this._destination || this._destination.temporary) {
-      this._tryPushCurrentPosition();
+      this._tryPushCurrentPosition({});
     }
   }
 
@@ -731,11 +754,13 @@ class PDFHistory {
     }
     this._boundEvents = {
       updateViewarea: this._updateViewarea.bind(this),
+      scaleChanging: this._scaleChanging.bind(this),
       popState: this._popState.bind(this),
       pageHide: this._pageHide.bind(this),
     };
 
     this.eventBus._on("updateviewarea", this._boundEvents.updateViewarea);
+    this.eventBus._on("scalechanging", this._boundEvents.scaleChanging);
     window.addEventListener("popstate", this._boundEvents.popState);
     window.addEventListener("pagehide", this._boundEvents.pageHide);
   }
@@ -748,6 +773,7 @@ class PDFHistory {
       return; // The event listeners were already removed.
     }
     this.eventBus._off("updateviewarea", this._boundEvents.updateViewarea);
+    this.eventBus._off("scalechanging", this._boundEvents.scaleChanging);
     window.removeEventListener("popstate", this._boundEvents.popState);
     window.removeEventListener("pagehide", this._boundEvents.pageHide);
 
