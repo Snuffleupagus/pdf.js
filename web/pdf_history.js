@@ -36,7 +36,8 @@ const UPDATE_VIEWAREA_TIMEOUT = 1000; // milliseconds
 /**
  * @typedef {Object} InitializeParameters
  * @property {string} fingerprint - The PDF document's unique fingerprint.
- * @property {boolean} [resetHistory] - Reset the browsing history.
+ * @property {Object|null} [initialDest] - The explicit destination array.
+ *   If the value is `null`, the browsing history will be reset.
  * @property {boolean} [updateUrl] - Attempt to update the document URL, with
  *   the current hash, when pushing/replacing browser history entries.
  */
@@ -91,7 +92,7 @@ class PDFHistory {
    * browser history entry or the document hash, whichever is present.
    * @param {InitializeParameters} params
    */
-  initialize({ fingerprint, resetHistory = false, updateUrl = false }) {
+  initialize({ fingerprint, initialDest = undefined, updateUrl = false }) {
     if (!fingerprint || typeof fingerprint !== "string") {
       console.error(
         'PDFHistory.initialize: The "fingerprint" must be a non-empty string.'
@@ -120,6 +121,7 @@ class PDFHistory {
     this._destination = null;
     this._position = null;
 
+    const resetHistory = initialDest === null;
     if (!this._isValidState(state, /* checkReload = */ true) || resetHistory) {
       const { hash, page, rotation } = this._parseCurrentHash(
         /* checkNameddest = */ true

@@ -1272,27 +1272,32 @@ const PDFViewerApplication = {
         openActionPromise,
       ])
         .then(async ([timeStamp, stored, pageLayout, pageMode, openAction]) => {
-          const viewOnLoad = AppOptions.get("viewOnLoad");
+          const viewOnLoad = AppOptions.get("viewOnLoad"),
+            defaultZoomValue = AppOptions.get("defaultZoomValue");
+          const openActionDest = openAction?.dest;
 
           this._initializePdfHistory({
             fingerprint: pdfDocument.fingerprint,
             viewOnLoad,
-            initialDest: openAction?.dest,
+            openActionDest,
           });
           const initialBookmark = this.initialBookmark;
 
           // Initialize the default values, from user preferences.
-          const zoom = AppOptions.get("defaultZoomValue");
-          let hash = zoom ? `zoom=${zoom}` : null;
-
-          let rotation = null;
+          let hash, rotation;
           let sidebarView = AppOptions.get("sidebarViewOnLoad");
           let scrollMode = AppOptions.get("scrollModeOnLoad");
           let spreadMode = AppOptions.get("spreadModeOnLoad");
 
-          if (stored.page && viewOnLoad !== ViewOnLoad.INITIAL) {
+          // Ensure that the /OpenAction destination is used, unless overridden
+          // by the view history, even when the browsing history is disabled.
+          if (viewOnLoad === ViewOnLoad.UNKNOWN && openActionDest) {
+            hash = JSON.stringify(openActionDest);
+          }
+          // Always let the view history take precedence over the /OpenAction.
+          if (viewOnLoad !== ViewOnLoad.INITIAL && stored.page) {
             hash =
-              `page=${stored.page}&zoom=${zoom || stored.zoom},` +
+              `page=${stored.page}&zoom=${defaultZoomValue || stored.zoom},` +
               `${stored.scrollLeft},${stored.scrollTop}`;
 
             rotation = parseInt(stored.rotation, 10);
@@ -1306,6 +1311,10 @@ const PDFViewerApplication = {
             if (spreadMode === SpreadMode.UNKNOWN) {
               spreadMode = stored.spreadMode | 0;
             }
+          }
+          // Fallback to the "defaultZoomValue", when no view history exists.
+          if (defaultZoomValue) {
+            hash ||= `zoom=${defaultZoomValue}`;
           }
           // Always let the user preference/view history take precedence.
           if (pageMode && sidebarView === SidebarView.UNKNOWN) {
@@ -1652,34 +1661,34 @@ const PDFViewerApplication = {
   /**
    * @private
    */
-  _initializePdfHistory({ fingerprint, viewOnLoad, initialDest = null }) {
+  _initializePdfHistory({ fingerprint, viewOnLoad, openActionDest }) {
     if (this.isViewerEmbedded || AppOptions.get("disableHistory")) {
       // The browsing history is only enabled when the viewer is standalone,
       // i.e. not when it is embedded in a web page.
       return;
     }
+    let initialDest;
+    switch (viewOnLoad) {
+      case ViewOnLoad.UNKNOWN:
+        if (openActionDest) {
+          initialDest = openActionDest;
+        }
+        break;
+      case ViewOnLoad.PREVIOUS:
+        break;
+      case ViewOnLoad.INITIAL:
+        initialDest = null;
+        break;
+    }
     this.pdfHistory.initialize({
       fingerprint,
-      resetHistory: viewOnLoad === ViewOnLoad.INITIAL,
+      initialDest,
       updateUrl: AppOptions.get("historyUpdateUrl"),
     });
 
     if (this.pdfHistory.initialBookmark) {
       this.initialBookmark = this.pdfHistory.initialBookmark;
-
       this.initialRotation = this.pdfHistory.initialRotation;
-    }
-
-    // Always let the browser history/document hash take precedence.
-    if (
-      initialDest &&
-      !this.initialBookmark &&
-      viewOnLoad === ViewOnLoad.UNKNOWN
-    ) {
-      this.initialBookmark = JSON.stringify(initialDest);
-      // TODO: Re-factor the `PDFHistory` initialization to remove this hack
-      // that's currently necessary to prevent weird initial history state.
-      this.pdfHistory.push({ explicitDest: initialDest, pageNumber: null });
     }
   },
 
