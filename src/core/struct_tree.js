@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { isDict, isName, isRef } from "./primitives.js";
+import { isDict, isName, isRef, Name } from "./primitives.js";
 import { isString, stringToPDFString, warn } from "../shared/util.js";
 import { NumberTree } from "./name_number_tree.js";
 
@@ -41,12 +41,11 @@ class StructTreeRoot {
     if (!isDict(roleMapDict)) {
       return;
     }
-    roleMapDict.forEach((key, value) => {
-      if (!isName(value)) {
-        return;
+    for (const [key, value] of roleMapDict) {
+      if (value instanceof Name) {
+        this.roleMap.set(key, value.name);
       }
-      this.roleMap.set(key, value.name);
-    });
+    }
   }
 }
 

@@ -163,10 +163,20 @@ const Dict = (function DictClosure() {
       return this._map[key] !== undefined;
     },
 
-    forEach: function Dict_forEach(callback) {
-      for (const key in this._map) {
-        callback(key, this.get(key));
-      }
+    [Symbol.iterator]() {
+      const keys = Object.keys(this._map),
+        length = keys.length;
+      let index = 0;
+
+      return {
+        next: () => {
+          if (index < length) {
+            const key = keys[index++];
+            return { value: [key, this.get(key)], done: false };
+          }
+          return { value: undefined, done: true };
+        },
+      };
     },
   };
 
@@ -300,14 +310,16 @@ class RefSet {
     this._set.delete(ref.toString());
   }
 
-  forEach(callback) {
-    for (const ref of this._set.values()) {
-      callback(ref);
-    }
-  }
-
   clear() {
     this._set.clear();
+  }
+
+  [Symbol.iterator]() {
+    const iterator = this._set.values();
+
+    return {
+      next: () => iterator.next(),
+    };
   }
 }
 
@@ -336,14 +348,16 @@ class RefSetCache {
     this._map.set(ref.toString(), this.get(aliasRef));
   }
 
-  forEach(callback) {
-    for (const value of this._map.values()) {
-      callback(value);
-    }
-  }
-
   clear() {
     this._map.clear();
+  }
+
+  [Symbol.iterator]() {
+    const iterator = this._map.values();
+
+    return {
+      next: () => iterator.next(),
+    };
   }
 }
 

@@ -54,7 +54,7 @@ import { MetadataParser } from "./metadata_parser.js";
 import { StructTreeRoot } from "./struct_tree.js";
 
 function fetchDestination(dest) {
-  return isDict(dest) ? dest.get("D") : dest;
+  return dest instanceof Dict ? dest.get("D") : dest;
 }
 
 class Catalog {
@@ -518,11 +518,11 @@ class Catalog {
         dests[key] = fetchDestination(value);
       }
     } else if (obj instanceof Dict) {
-      obj.forEach(function (key, value) {
+      for (const [key, value] of obj) {
         if (value) {
           dests[key] = fetchDestination(value);
         }
-      });
+      }
     }
     return shadow(this, "destinations", dests);
   }
@@ -964,40 +964,30 @@ class Catalog {
     return shadow(this, "jsActions", actions);
   }
 
-  fontFallback(id, handler) {
-    const promises = [];
-    this.fontCache.forEach(function (promise) {
-      promises.push(promise);
-    });
+  async fontFallback(id, handler) {
+    const translatedFonts = await Promise.all([...this.fontCache]);
 
-    return Promise.all(promises).then(translatedFonts => {
-      for (const translatedFont of translatedFonts) {
-        if (translatedFont.loadedName === id) {
-          translatedFont.fallback(handler);
-          return;
-        }
+    for (const translatedFont of translatedFonts) {
+      if (translatedFont.loadedName === id) {
+        translatedFont.fallback(handler);
+        return;
       }
-    });
+    }
   }
 
-  cleanup(manuallyTriggered = false) {
+  async cleanup(manuallyTriggered = false) {
     clearPrimitiveCaches();
     this.globalImageCache.clear(/* onlyData = */ manuallyTriggered);
     this.pageKidsCountCache.clear();
     this.nonBlendModesSet.clear();
 
-    const promises = [];
-    this.fontCache.forEach(function (promise) {
-      promises.push(promise);
-    });
+    const translatedFonts = await Promise.all([...this.fontCache]);
 
-    return Promise.all(promises).then(translatedFonts => {
-      for (const { dict } of translatedFonts) {
-        delete dict.cacheKey;
-      }
-      this.fontCache.clear();
-      this.builtInCMapCache.clear();
-    });
+    for (const { dict } of translatedFonts) {
+      delete dict.cacheKey;
+    }
+    this.fontCache.clear();
+    this.builtInCMapCache.clear();
   }
 
   getPageDict(pageIndex) {

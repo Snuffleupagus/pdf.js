@@ -22,7 +22,6 @@ import {
   getVerbosityLevel,
   info,
   InvalidPDFException,
-  isString,
   MissingPDFException,
   PasswordException,
   setVerbosityLevel,
@@ -624,11 +623,11 @@ class WorkerMessageHandler {
             const infoObj = Object.create(null);
             const xrefInfo = xref.trailer.get("Info") || null;
             if (xrefInfo instanceof Dict) {
-              xrefInfo.forEach((key, value) => {
-                if (isString(key) && isString(value)) {
+              for (const [key, value] of xrefInfo) {
+                if (typeof value === "string") {
                   infoObj[key] = stringToPDFString(value);
                 }
-              });
+              }
             }
 
             newXrefInfo = {

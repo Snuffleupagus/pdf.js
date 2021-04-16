@@ -193,17 +193,21 @@ describe("primitives", function () {
       expect(values[2]).toEqual(testFontFile);
     });
 
-    it("should callback for each stored key", function () {
-      const callbackSpy = jasmine.createSpy("spy on callback in dictionary");
+    it("should support iteration", function () {
+      const expectedEntries = [
+        ["FontFile", testFontFile],
+        ["FontFile2", testFontFile2],
+        ["FontFile3", testFontFile3],
+      ];
 
-      dictWithManyKeys.forEach(callbackSpy);
+      const entriesLoop = [];
+      for (const [key, value] of dictWithManyKeys) {
+        entriesLoop.push([key, value]);
+      }
+      expect(entriesLoop).toEqual(expectedEntries);
 
-      expect(callbackSpy).toHaveBeenCalled();
-      const callbackSpyCalls = callbackSpy.calls;
-      expect(callbackSpyCalls.argsFor(0)).toEqual(["FontFile", testFontFile]);
-      expect(callbackSpyCalls.argsFor(1)).toEqual(["FontFile2", testFontFile2]);
-      expect(callbackSpyCalls.argsFor(2)).toEqual(["FontFile3", testFontFile3]);
-      expect(callbackSpyCalls.count()).toEqual(3);
+      const entriesIterator = [...dictWithManyKeys];
+      expect(entriesIterator).toEqual(expectedEntries);
     });
 
     it("should handle keys pointing to indirect objects, both sync and async", async function () {
@@ -390,20 +394,44 @@ describe("primitives", function () {
   });
 
   describe("RefSet", function () {
-    it("should have a stored value", function () {
-      const ref = Ref.get(4, 2);
-      const refset = new RefSet();
-      refset.put(ref);
-      expect(refset.has(ref)).toBeTruthy();
-    });
-    it("should not have an unknown value", function () {
-      const ref = Ref.get(4, 2);
-      const refset = new RefSet();
-      expect(refset.has(ref)).toBeFalsy();
+    const ref1 = Ref.get(4, 0),
+      ref2 = Ref.get(5, 0);
+    let refSet;
 
-      refset.put(ref);
-      const anotherRef = Ref.get(2, 4);
-      expect(refset.has(anotherRef)).toBeFalsy();
+    beforeEach(function () {
+      refSet = new RefSet();
+    });
+
+    afterEach(function () {
+      refSet = null;
+    });
+
+    it("should have a stored value", function () {
+      refSet.put(ref1);
+      expect(refSet.has(ref1)).toBeTruthy();
+    });
+
+    it("should not have an unknown value", function () {
+      expect(refSet.has(ref1)).toBeFalsy();
+
+      refSet.put(ref1);
+      expect(refSet.has(ref2)).toBeFalsy();
+    });
+
+    it("should support iteration", function () {
+      const expectedValues = [ref1.toString(), ref2.toString()];
+
+      refSet.put(ref1);
+      refSet.put(ref2);
+
+      const valuesLoop = [];
+      for (const value of refSet) {
+        valuesLoop.push(value);
+      }
+      expect(valuesLoop).toEqual(expectedValues);
+
+      const valuesIterator = [...refSet];
+      expect(valuesIterator).toEqual(expectedValues);
     });
   });
 
@@ -453,14 +481,19 @@ describe("primitives", function () {
     });
 
     it("should support iteration", function () {
+      const expectedValues = [obj1, obj2];
+
       cache.put(ref1, obj1);
       cache.put(ref2, obj2);
 
-      const values = [];
-      cache.forEach(function (value) {
-        values.push(value);
-      });
-      expect(values).toEqual([obj1, obj2]);
+      const valuesLoop = [];
+      for (const value of cache) {
+        valuesLoop.push(value);
+      }
+      expect(valuesLoop).toEqual(expectedValues);
+
+      const valuesIterator = [...cache];
+      expect(valuesIterator).toEqual(expectedValues);
     });
   });
 
