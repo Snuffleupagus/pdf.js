@@ -1622,9 +1622,15 @@ describe("api", function () {
 
     it("gets operator list", async function () {
       const operatorList = await page.getOperatorList();
-      expect(!!operatorList.fnArray).toEqual(true);
-      expect(!!operatorList.argsArray).toEqual(true);
+
+      expect(operatorList.fnArray.length).toBeGreaterThan(100);
+      expect(operatorList.argsArray.length).toBeGreaterThan(100);
       expect(operatorList.lastChunk).toEqual(true);
+
+      // The `getOperatorList` method, similar to the `render` method,
+      // is expected to include any existing Annotation-operatorLists.
+      expect(operatorList.fnArray.includes(OPS.beginAnnotations)).toEqual(true);
+      expect(operatorList.fnArray.includes(OPS.endAnnotations)).toEqual(true);
     });
 
     it("gets operatorList with JPEG image (issue 4888)", async function () {
