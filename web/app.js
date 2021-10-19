@@ -1372,18 +1372,36 @@ const PDFViewerApplication = {
       this._initializeAutoPrint(pdfDocument, openActionPromise);
     });
 
-    onePageRendered.then(() => {
+    onePageRendered.then(async () => {
+      if (!this.documentInfo) {
+        // It should be *extremely* rare for metadata to not have been resolved
+        // when this code runs, but ensure that we handle that case here.
+        await new Promise(resolve => {
+          this.eventBus._on("metadataloaded", resolve, { once: true });
+        });
+        if (pdfDocument !== this.pdfDocument) {
+          return; // The document was closed while the metadata resolved.
+        }
+      }
+
       pdfDocument.getOutline().then(outline => {
         if (pdfDocument !== this.pdfDocument) {
           return; // The document was closed while the outline resolved.
         }
-        this.pdfOutlineViewer.render({ outline, pdfDocument });
+        this.pdfOutlineViewer.render({
+          outline,
+          documentInfo: this.documentInfo,
+          pdfDocument,
+        });
       });
       pdfDocument.getAttachments().then(attachments => {
         if (pdfDocument !== this.pdfDocument) {
           return; // The document was closed while the attachments resolved.
         }
-        this.pdfAttachmentViewer.render({ attachments });
+        this.pdfAttachmentViewer.render({
+          attachments,
+          documentInfo: this.documentInfo,
+        });
       });
       // Ensure that the layers accurately reflects the current state in the
       // viewer itself, rather than the default state provided by the API.
@@ -1391,7 +1409,11 @@ const PDFViewerApplication = {
         if (pdfDocument !== this.pdfDocument) {
           return; // The document was closed while the layers resolved.
         }
-        this.pdfLayerViewer.render({ optionalContentConfig, pdfDocument });
+        this.pdfLayerViewer.render({
+          optionalContentConfig,
+          documentInfo: this.documentInfo,
+          pdfDocument,
+        });
       });
       if (
         (typeof PDFJSDev !== "undefined" && PDFJSDev.test("MOZCENTRAL")) ||

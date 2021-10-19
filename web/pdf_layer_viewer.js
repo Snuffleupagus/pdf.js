@@ -26,6 +26,7 @@ import { BaseTreeViewer } from "./base_tree_viewer.js";
  * @typedef {Object} PDFLayerViewerRenderParameters
  * @property {OptionalContentConfig|null} optionalContentConfig - An
  *   {OptionalContentConfig} instance.
+ * @property {Object} documentInfo
  * @property {PDFDocument} pdfDocument - A {PDFDocument} instance.
  */
 
@@ -87,7 +88,12 @@ class PDFLayerViewer extends BaseTreeViewer {
       element.textContent = this._normalizeTextContent(name);
       return;
     }
-    element.textContent = await this.l10n.get("additional_layers");
+    const [msg, locale] = await Promise.all([
+      this.l10n.get("additional_layers"),
+      this.l10n.getLanguage(),
+    ]);
+    element.textContent = msg;
+    element.lang = locale;
     element.style.fontStyle = "italic";
   }
 
@@ -111,7 +117,7 @@ class PDFLayerViewer extends BaseTreeViewer {
   /**
    * @param {PDFLayerViewerRenderParameters} params
    */
-  render({ optionalContentConfig, pdfDocument }) {
+  render({ optionalContentConfig, documentInfo, pdfDocument }) {
     if (this._optionalContentConfig) {
       this.reset();
     }
@@ -170,7 +176,7 @@ class PDFLayerViewer extends BaseTreeViewer {
       }
     }
 
-    this._finishRendering(fragment, layersCount, hasAnyNesting);
+    this._finishRendering(fragment, layersCount, documentInfo, hasAnyNesting);
   }
 
   /**

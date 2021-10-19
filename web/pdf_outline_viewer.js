@@ -27,6 +27,7 @@ import { SidebarView } from "./ui_utils.js";
 /**
  * @typedef {Object} PDFOutlineViewerRenderParameters
  * @property {Array|null} outline - An array of outline objects.
+ * @property {Object} documentInfo
  * @property {PDFDocument} pdfDocument - A {PDFDocument} instance.
  */
 
@@ -175,7 +176,7 @@ class PDFOutlineViewer extends BaseTreeViewer {
   /**
    * @param {PDFOutlineViewerRenderParameters} params
    */
-  render({ outline, pdfDocument }) {
+  render({ outline, documentInfo, pdfDocument }) {
     if (this._outline) {
       this.reset();
     }
@@ -220,7 +221,7 @@ class PDFOutlineViewer extends BaseTreeViewer {
       }
     }
 
-    this._finishRendering(fragment, outlineCount, hasAnyNesting);
+    this._finishRendering(fragment, outlineCount, documentInfo, hasAnyNesting);
   }
 
   /**

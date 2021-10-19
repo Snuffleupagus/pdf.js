@@ -36,6 +36,8 @@ class BaseTreeViewer {
 
     // Remove the tree from the DOM.
     this.container.textContent = "";
+
+    this.container.removeAttribute("lang");
     // Ensure that the left (right in RTL locales) margin is always reset,
     // to prevent incorrect tree alignment if a new document is opened.
     this.container.classList.remove("treeWithDeepNesting");
@@ -111,7 +113,15 @@ class BaseTreeViewer {
   /**
    * @private
    */
-  _finishRendering(fragment, count, hasAnyNesting = false) {
+  _finishRendering(
+    fragment,
+    count,
+    documentInfo = null,
+    hasAnyNesting = false
+  ) {
+    if (documentInfo?.Language) {
+      this.container.lang = documentInfo.Language;
+    }
     if (hasAnyNesting) {
       this.container.classList.add("treeWithDeepNesting");
 

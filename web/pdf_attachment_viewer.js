@@ -26,6 +26,7 @@ import { BaseTreeViewer } from "./base_tree_viewer.js";
 /**
  * @typedef {Object} PDFAttachmentViewerRenderParameters
  * @property {Object|null} attachments - A lookup table of attachment objects.
+ * @property {Object} documentInfo
  */
 
 class PDFAttachmentViewer extends BaseTreeViewer {
@@ -101,7 +102,7 @@ class PDFAttachmentViewer extends BaseTreeViewer {
   /**
    * @param {PDFAttachmentViewerRenderParameters} params
    */
-  render({ attachments, keepRenderedCapability = false }) {
+  render({ attachments, documentInfo, keepRenderedCapability = false }) {
     if (this._attachments) {
       this.reset(keepRenderedCapability);
     }
@@ -135,7 +136,7 @@ class PDFAttachmentViewer extends BaseTreeViewer {
       attachmentsCount++;
     }
 
-    this._finishRendering(fragment, attachmentsCount);
+    this._finishRendering(fragment, attachmentsCount, documentInfo);
   }
 
   /**
