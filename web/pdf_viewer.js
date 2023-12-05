@@ -69,6 +69,7 @@ import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { SimpleLinkService } from "./pdf_link_service.js";
 
 const DEFAULT_CACHE_SIZE = 10;
+const MAX_TOTAL_CANVAS_PIXELS = 2147483648; // 2 giga-pixels
 
 const PagesCountLimit = {
   FORCE_SCROLL_MODE_PAGE: 15000,
@@ -1550,6 +1551,23 @@ class PDFViewer {
     this.#scrollIntoView(pageView, /* pageSpot = */ { left, top });
   }
 
+  #getTotalCanvasPixels(visiblePages) {
+    const visibleIds = new Set();
+    let totalCanvasPixels = 0;
+
+    for (const { view } of visiblePages) {
+      visibleIds.add(view.id);
+      totalCanvasPixels += view.getTotalCanvasPixels(/* cached = */ false);
+    }
+    for (const view of this.#buffer) {
+      if (visibleIds.has(view.id)) {
+        continue;
+      }
+      totalCanvasPixels += view.getTotalCanvasPixels(/* cached = */ true);
+    }
+    return totalCanvasPixels;
+  }
+
   _updateLocation(firstPage) {
     const currentScale = this._currentScale;
     const currentScaleValue = this._currentScaleValue;
@@ -1591,7 +1609,12 @@ class PDFViewer {
     if (numVisiblePages === 0) {
       return;
     }
-    const newCacheSize = Math.max(DEFAULT_CACHE_SIZE, 2 * numVisiblePages + 1);
+    const totalCanvasPixels = this.#getTotalCanvasPixels(visiblePages);
+    let newCacheSize = 2 * numVisiblePages + 1;
+
+    if (totalCanvasPixels <= MAX_TOTAL_CANVAS_PIXELS) {
+      newCacheSize = Math.max(DEFAULT_CACHE_SIZE, newCacheSize);
+    }
     this.#buffer.resize(newCacheSize, visible.ids);
 
     this.renderingQueue.renderHighestPriority(visible);

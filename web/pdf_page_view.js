@@ -815,6 +815,43 @@ class PDFPageView {
     return this.viewport.convertToPdfPoint(x, y);
   }
 
+  getTotalCanvasPixels(cached = false) {
+    if (cached && this.canvas) {
+      return this.canvas.width * this.canvas.height;
+    }
+    const { outputScale } = this.#createOutputScale();
+    return (
+      ((Math.floor(this.viewport.width) * outputScale.sx) | 0) *
+      ((Math.floor(this.viewport.height) * outputScale.sy) | 0)
+    );
+  }
+
+  #createOutputScale() {
+    const outputScale = new OutputScale();
+    let hasRestrictedScaling = false;
+
+    if (
+      (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) &&
+      this.maxCanvasPixels === 0
+    ) {
+      const invScale = 1 / this.scale;
+      // Use a scale that makes the canvas have the originally intended size
+      // of the page.
+      outputScale.sx *= invScale;
+      outputScale.sy *= invScale;
+      hasRestrictedScaling = true;
+    } else if (this.maxCanvasPixels > 0) {
+      const pixelsInViewport = this.viewport.width * this.viewport.height;
+      const maxScale = Math.sqrt(this.maxCanvasPixels / pixelsInViewport);
+      if (outputScale.sx > maxScale || outputScale.sy > maxScale) {
+        outputScale.sx = maxScale;
+        outputScale.sy = maxScale;
+        hasRestrictedScaling = true;
+      }
+    }
+    return { outputScale, hasRestrictedScaling };
+  }
+
   async #finishRenderTask(renderTask, error = null) {
     // The renderTask may have been replaced by a new one, so only remove
     // the reference to the renderTask if it matches the one that is
@@ -956,29 +993,10 @@ class PDFPageView {
     this.canvas = canvas;
 
     const ctx = canvas.getContext("2d", { alpha: false });
-    const outputScale = (this.outputScale = new OutputScale());
+    const { outputScale, hasRestrictedScaling } = this.#createOutputScale();
+    this.outputScale = outputScale;
+    this.#hasRestrictedScaling = hasRestrictedScaling;
 
-    if (
-      (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) &&
-      this.maxCanvasPixels === 0
-    ) {
-      const invScale = 1 / this.scale;
-      // Use a scale that makes the canvas have the originally intended size
-      // of the page.
-      outputScale.sx *= invScale;
-      outputScale.sy *= invScale;
-      this.#hasRestrictedScaling = true;
-    } else if (this.maxCanvasPixels > 0) {
-      const pixelsInViewport = width * height;
-      const maxScale = Math.sqrt(this.maxCanvasPixels / pixelsInViewport);
-      if (outputScale.sx > maxScale || outputScale.sy > maxScale) {
-        outputScale.sx = maxScale;
-        outputScale.sy = maxScale;
-        this.#hasRestrictedScaling = true;
-      } else {
-        this.#hasRestrictedScaling = false;
-      }
-    }
     const sfx = approximateFraction(outputScale.sx);
     const sfy = approximateFraction(outputScale.sy);
 
