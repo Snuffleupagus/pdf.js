@@ -83,6 +83,11 @@ const pdfjsVersion =
 const pdfjsBuild =
   typeof PDFJSDev !== "undefined" ? PDFJSDev.eval("BUNDLE_BUILD") : void 0;
 
+globalThis.pdfjsLib =
+  typeof PDFJSDev !== "undefined" && !PDFJSDev.test("LIB")
+    ? __GLOBAL_PDFJS_LIB__ // eslint-disable-line no-undef
+    : {};
+
 export {
   AbortException,
   AnnotationEditorLayer,

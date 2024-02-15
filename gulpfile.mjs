@@ -418,29 +418,51 @@ function checkChromePreferencesFile(chromePrefsPath, webPrefs) {
   return ret;
 }
 
-function tweakWebpackOutput(jsName) {
-  const replacer = [];
+function fetchGlobals(fileName) {
+  const content = fs.readFileSync(fileName).toString(),
+    exportBuf = [];
+  let parsingExports = false;
 
-  if (jsName) {
-    replacer.push(
-      " __webpack_exports__ = {};",
-      " __webpack_exports__ = await __webpack_exports__;"
-    );
-  }
-  const regex = new RegExp(`(${replacer.join("|")})`, "gm");
-
-  return replace(regex, match => {
-    switch (match) {
-      case " __webpack_exports__ = {};":
-        return ` __webpack_exports__ = globalThis.${jsName} = {};`;
-      case " __webpack_exports__ = await __webpack_exports__;":
-        return ` __webpack_exports__ = globalThis.${jsName} = await (globalThis.${jsName}Promise = __webpack_exports__);`;
+  for (const line of content.split("\n")) {
+    let m = /^\s*export \{($|[^}]*)/.exec(line);
+    if (m) {
+      if (m[1]) {
+        // Single-line `export` statement.
+        for (const exp of m[1].split(",")) {
+          exportBuf.push(`  ${exp.trim()},`);
+        }
+        break;
+      }
+      parsingExports = true;
+      continue;
     }
-    return match;
-  });
+    if (!parsingExports) {
+      continue;
+    }
+    if (/^\s*\};$/.test(line)) {
+      parsingExports = false;
+      break;
+    }
+    m = /^\s*([^,]+),$/.exec(line);
+    if (m?.[1]) {
+      exportBuf.push(`  ${m[1]},`);
+    }
+  }
+
+  if (!exportBuf.length) {
+    throw new Error(`No exports found in: ${fileName}`);
+  }
+  return `{\n${exportBuf.join("\n")}\n}`;
+}
+
+function addGlobals(replacer, data) {
+  return replace(replacer, data);
 }
 
 function createMainBundle(defines) {
+  const mainFileName = "./src/pdf.js";
+  const mainGlobals = fetchGlobals(mainFileName);
+
   const mainFileConfig = createWebpackConfig(defines, {
     filename: "pdf.mjs",
     library: {
@@ -448,9 +470,9 @@ function createMainBundle(defines) {
     },
   });
   return gulp
-    .src("./src/pdf.js")
+    .src(mainFileName)
     .pipe(webpack2Stream(mainFileConfig))
-    .pipe(tweakWebpackOutput("pdfjsLib"));
+    .pipe(addGlobals("__GLOBAL_PDFJS_LIB__", mainGlobals));
 }
 
 function createScriptingBundle(defines, extraOptions = undefined) {
@@ -466,8 +488,7 @@ function createScriptingBundle(defines, extraOptions = undefined) {
   );
   return gulp
     .src("./src/pdf.scripting.js")
-    .pipe(webpack2Stream(scriptingFileConfig))
-    .pipe(tweakWebpackOutput());
+    .pipe(webpack2Stream(scriptingFileConfig));
 }
 
 function createSandboxExternal(defines) {
@@ -504,6 +525,9 @@ function createSandboxBundle(defines, extraOptions = undefined) {
   };
   fs.unlinkSync(scriptingPath);
 
+  const sandboxFileName = "./src/pdf.sandbox.js";
+  const sandboxGlobals = fetchGlobals(sandboxFileName);
+
   const sandboxFileConfig = createWebpackConfig(
     sandboxDefines,
     {
@@ -514,14 +538,16 @@ function createSandboxBundle(defines, extraOptions = undefined) {
     },
     extraOptions
   );
-
   return gulp
-    .src("./src/pdf.sandbox.js")
+    .src(sandboxFileName)
     .pipe(webpack2Stream(sandboxFileConfig))
-    .pipe(tweakWebpackOutput("pdfjsSandbox"));
+    .pipe(addGlobals("__GLOBAL_PDFJS_SANDBOX__", sandboxGlobals));
 }
 
 function createWorkerBundle(defines) {
+  const workerFileName = "./src/pdf.worker.js";
+  const workerGlobals = fetchGlobals(workerFileName);
+
   const workerFileConfig = createWebpackConfig(defines, {
     filename: "pdf.worker.mjs",
     library: {
@@ -529,9 +555,9 @@ function createWorkerBundle(defines) {
     },
   });
   return gulp
-    .src("./src/pdf.worker.js")
+    .src(workerFileName)
     .pipe(webpack2Stream(workerFileConfig))
-    .pipe(tweakWebpackOutput("pdfjsWorker"));
+    .pipe(addGlobals("__GLOBAL_PDFJS_WORKER__", workerGlobals));
 }
 
 function createWebBundle(defines, options) {
@@ -547,10 +573,7 @@ function createWebBundle(defines, options) {
       defaultPreferencesDir: options.defaultPreferencesDir,
     }
   );
-  return gulp
-    .src("./web/viewer.js")
-    .pipe(webpack2Stream(viewerFileConfig))
-    .pipe(tweakWebpackOutput());
+  return gulp.src("./web/viewer.js").pipe(webpack2Stream(viewerFileConfig));
 }
 
 function createGVWebBundle(defines, options) {
@@ -568,11 +591,13 @@ function createGVWebBundle(defines, options) {
   );
   return gulp
     .src("./web/viewer-geckoview.js")
-    .pipe(webpack2Stream(viewerFileConfig))
-    .pipe(tweakWebpackOutput());
+    .pipe(webpack2Stream(viewerFileConfig));
 }
 
 function createComponentsBundle(defines) {
+  const componentsFileName = "./web/pdf_viewer.component.js";
+  const componentsGlobals = fetchGlobals(componentsFileName);
+
   const componentsFileConfig = createWebpackConfig(defines, {
     filename: "pdf_viewer.mjs",
     library: {
@@ -580,22 +605,25 @@ function createComponentsBundle(defines) {
     },
   });
   return gulp
-    .src("./web/pdf_viewer.component.js")
+    .src(componentsFileName)
     .pipe(webpack2Stream(componentsFileConfig))
-    .pipe(tweakWebpackOutput("pdfjsViewer"));
+    .pipe(addGlobals("__GLOBAL_PDFJS_VIEWER__", componentsGlobals));
 }
 
 function createImageDecodersBundle(defines) {
-  const componentsFileConfig = createWebpackConfig(defines, {
+  const imageFileName = "./src/pdf.image_decoders.js";
+  const imageGlobals = fetchGlobals(imageFileName);
+
+  const imageFileConfig = createWebpackConfig(defines, {
     filename: "pdf.image_decoders.mjs",
     library: {
       type: "module",
     },
   });
   return gulp
-    .src("./src/pdf.image_decoders.js")
-    .pipe(webpack2Stream(componentsFileConfig))
-    .pipe(tweakWebpackOutput("pdfjsImageDecoders"));
+    .src(imageFileName)
+    .pipe(webpack2Stream(imageFileConfig))
+    .pipe(addGlobals("__GLOBAL_PDFJS_IMAGE_DECODERS__", imageGlobals));
 }
 
 function createCMapBundle() {

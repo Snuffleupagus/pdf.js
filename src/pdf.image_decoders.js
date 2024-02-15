@@ -29,6 +29,11 @@ const pdfjsVersion =
 const pdfjsBuild =
   typeof PDFJSDev !== "undefined" ? PDFJSDev.eval("BUNDLE_BUILD") : void 0;
 
+globalThis.pdfjsImageDecoders =
+  typeof PDFJSDev !== "undefined" && !PDFJSDev.test("LIB")
+    ? __GLOBAL_PDFJS_IMAGE_DECODERS__ // eslint-disable-line no-undef
+    : {};
+
 export {
   getVerbosityLevel,
   Jbig2Image,

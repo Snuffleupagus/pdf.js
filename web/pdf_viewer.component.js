@@ -46,6 +46,11 @@ const pdfjsVersion =
 const pdfjsBuild =
   typeof PDFJSDev !== "undefined" ? PDFJSDev.eval("BUNDLE_BUILD") : void 0;
 
+globalThis.pdfjsViewer =
+  typeof PDFJSDev !== "undefined" && !PDFJSDev.test("LIB")
+    ? __GLOBAL_PDFJS_VIEWER__ // eslint-disable-line no-undef
+    : {};
+
 export {
   AnnotationLayerBuilder,
   DownloadManager,

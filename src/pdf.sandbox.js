@@ -144,4 +144,9 @@ function QuickJSSandbox() {
   return ModuleLoader().then(module => new Sandbox(window, module));
 }
 
+globalThis.pdfjsSandbox =
+  typeof PDFJSDev !== "undefined" && !PDFJSDev.test("LIB")
+    ? __GLOBAL_PDFJS_SANDBOX__ // eslint-disable-line no-undef
+    : {};
+
 export { QuickJSSandbox };

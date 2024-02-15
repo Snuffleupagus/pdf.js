@@ -22,4 +22,9 @@ const pdfjsVersion =
 const pdfjsBuild =
   typeof PDFJSDev !== "undefined" ? PDFJSDev.eval("BUNDLE_BUILD") : void 0;
 
+globalThis.pdfjsWorker =
+  typeof PDFJSDev !== "undefined" && !PDFJSDev.test("LIB")
+    ? __GLOBAL_PDFJS_WORKER__ // eslint-disable-line no-undef
+    : {};
+
 export { WorkerMessageHandler };
