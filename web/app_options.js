@@ -386,11 +386,6 @@ const defaultOptions = {
     value: false,
     kind: OptionKind.API,
   },
-  isEvalSupported: {
-    /** @type {boolean} */
-    value: true,
-    kind: OptionKind.API,
-  },
   isOffscreenCanvasSupported: {
     /** @type {boolean} */
     value: true,

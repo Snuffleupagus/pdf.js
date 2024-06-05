@@ -3866,7 +3866,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
     // We want to be able to add mouse listeners to the annotation.
     this.data.noHTML = false;
 
-    const { evaluatorOptions, xref } = params;
+    const { xref } = params;
     this.data.annotationType = AnnotationType.FREETEXT;
     this.setDefaultAppearance(params);
     this._hasAppearance = !!this.appearance;
@@ -3874,7 +3874,6 @@ class FreeTextAnnotation extends MarkupAnnotation {
     if (this._hasAppearance) {
       const { fontColor, fontSize } = parseAppearanceStream(
         this.appearance,
-        evaluatorOptions,
         xref
       );
       this.data.defaultAppearanceData.fontColor = fontColor;

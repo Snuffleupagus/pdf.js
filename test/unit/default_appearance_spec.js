@@ -56,18 +56,13 @@ describe("Default appearance", function () {
   });
 
   describe("parseAppearanceStream", () => {
-    let evaluatorOptions, xref;
+    let xref;
 
     beforeAll(function () {
-      evaluatorOptions = {
-        isEvalSupported: true,
-        isOffscreenCanvasSupported: false,
-      };
       xref = new XRefMock();
     });
 
     afterAll(function () {
-      evaluatorOptions = null;
       xref = null;
     });
 
@@ -101,9 +96,7 @@ describe("Default appearance", function () {
         fontName: "Helv",
         fontColor: new Uint8ClampedArray([107, 217, 41]),
       };
-      expect(parseAppearanceStream(appearance, evaluatorOptions, xref)).toEqual(
-        result
-      );
+      expect(parseAppearanceStream(appearance, xref)).toEqual(result);
       expect(appearance.pos).toEqual(0);
     });
 
@@ -122,9 +115,7 @@ describe("Default appearance", function () {
         fontName: "Helv",
         fontColor: new Uint8ClampedArray([237, 43, 112]),
       };
-      expect(parseAppearanceStream(appearance, evaluatorOptions, xref)).toEqual(
-        result
-      );
+      expect(parseAppearanceStream(appearance, xref)).toEqual(result);
       expect(appearance.pos).toEqual(0);
     });
 
@@ -159,9 +150,7 @@ describe("Default appearance", function () {
         fontName: "TT1",
         fontColor: new Uint8ClampedArray([135, 78, 254]),
       };
-      expect(parseAppearanceStream(appearance, evaluatorOptions, xref)).toEqual(
-        result
-      );
+      expect(parseAppearanceStream(appearance, xref)).toEqual(result);
       expect(appearance.pos).toEqual(0);
     });
 
@@ -182,9 +171,7 @@ describe("Default appearance", function () {
         fontName: "Helv",
         fontColor: new Uint8ClampedArray([16, 124, 16]),
       };
-      expect(parseAppearanceStream(appearance, evaluatorOptions, xref)).toEqual(
-        result
-      );
+      expect(parseAppearanceStream(appearance, xref)).toEqual(result);
       expect(appearance.pos).toEqual(0);
     });
 
@@ -208,9 +195,7 @@ describe("Default appearance", function () {
         fontName: "FXF0",
         fontColor: new Uint8ClampedArray([149, 63, 60]),
       };
-      expect(parseAppearanceStream(appearance, evaluatorOptions, xref)).toEqual(
-        result
-      );
+      expect(parseAppearanceStream(appearance, xref)).toEqual(result);
       expect(appearance.pos).toEqual(0);
     });
 
@@ -232,9 +217,7 @@ describe("Default appearance", function () {
         fontName: "Invalid_font",
         fontColor: new Uint8ClampedArray([0, 85, 127]),
       };
-      expect(parseAppearanceStream(appearance, evaluatorOptions, xref)).toEqual(
-        result
-      );
+      expect(parseAppearanceStream(appearance, xref)).toEqual(result);
       expect(appearance.pos).toEqual(0);
     });
   });

@@ -97,10 +97,9 @@ function parseDefaultAppearance(str) {
 }
 
 class AppearanceStreamEvaluator extends EvaluatorPreprocessor {
-  constructor(stream, evaluatorOptions, xref) {
+  constructor(stream, xref) {
     super(stream);
     this.stream = stream;
-    this.evaluatorOptions = evaluatorOptions;
     this.xref = xref;
 
     this.resources = stream.dict?.get("Resources");
@@ -200,18 +199,18 @@ class AppearanceStreamEvaluator extends EvaluatorPreprocessor {
   }
 
   get _pdfFunctionFactory() {
-    const pdfFunctionFactory = new PDFFunctionFactory({
-      xref: this.xref,
-      isEvalSupported: this.evaluatorOptions.isEvalSupported,
-    });
-    return shadow(this, "_pdfFunctionFactory", pdfFunctionFactory);
+    return shadow(
+      this,
+      "_pdfFunctionFactory",
+      new PDFFunctionFactory({ xref: this.xref })
+    );
   }
 }
 
 // Parse appearance stream to extract font and color information.
 // It returns the font properties used to render the first text object.
-function parseAppearanceStream(stream, evaluatorOptions, xref) {
-  return new AppearanceStreamEvaluator(stream, evaluatorOptions, xref).parse();
+function parseAppearanceStream(stream, xref) {
+  return new AppearanceStreamEvaluator(stream, xref).parse();
 }
 
 function getPdfColor(color, isFill) {

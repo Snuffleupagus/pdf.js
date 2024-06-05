@@ -56,7 +56,6 @@ describe("annotation", function () {
         },
       };
       this.evaluatorOptions = {
-        isEvalSupported: true,
         isOffscreenCanvasSupported: false,
       };
     }
