@@ -36,6 +36,9 @@ const LinkTarget = {
  *   Defaults to using no target.
  * @property {string} [externalLinkRel] - Specifies the `rel` attribute for
  *   external links. Defaults to stripping the referrer.
+ * @property {boolean} [ignoreDestinationPosition] - Ignores the position
+ *   argument, thus only scrolling the *page* into view, when navigating
+ *   to internal destinations. The default value is `false`.
  * @property {boolean} [ignoreDestinationZoom] - Ignores the zoom argument,
  *   thus preserving the current zoom level in the viewer, when navigating
  *   to internal destinations. The default value is `false`.
@@ -56,11 +59,13 @@ class PDFLinkService {
     eventBus,
     externalLinkTarget = null,
     externalLinkRel = null,
+    ignoreDestinationPosition = false,
     ignoreDestinationZoom = false,
   } = {}) {
     this.eventBus = eventBus;
     this.externalLinkTarget = externalLinkTarget;
     this.externalLinkRel = externalLinkRel;
+    this._ignoreDestinationPosition = ignoreDestinationPosition;
     this._ignoreDestinationZoom = ignoreDestinationZoom;
 
     this.baseUrl = null;
@@ -189,6 +194,7 @@ class PDFLinkService {
     this.pdfViewer.scrollPageIntoView({
       pageNumber,
       destArray: explicitDest,
+      ignoreDestinationPosition: this._ignoreDestinationPosition,
       ignoreDestinationZoom: this._ignoreDestinationZoom,
     });
   }

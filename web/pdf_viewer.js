@@ -1432,6 +1432,8 @@ class PDFViewer {
    *   format: <page-ref> </XYZ|/FitXXX> <args..>
    * @property {boolean} [allowNegativeOffset] - Allow negative page offsets.
    *   The default value is `false`.
+   * @property {boolean} [ignoreDestinationPosition] - Ignore the postion
+   *   argument in the destination array. The default value is `false`.
    * @property {boolean} [ignoreDestinationZoom] - Ignore the zoom argument in
    *   the destination array. The default value is `false`.
    */
@@ -1444,6 +1446,7 @@ class PDFViewer {
     pageNumber,
     destArray = null,
     allowNegativeOffset = false,
+    ignoreDestinationPosition = false,
     ignoreDestinationZoom = false,
   }) {
     if (!this.pdfDocument) {
@@ -1555,8 +1558,8 @@ class PDFViewer {
       }
     }
 
-    if (scale === "page-fit" && !destArray[4]) {
-      this.#scrollIntoView(pageView);
+    if (ignoreDestinationPosition || (scale === "page-fit" && !destArray[4])) {
+      this._setCurrentPageNumber(pageNumber, /* resetCurrentPageView = */ true);
       return;
     }
 

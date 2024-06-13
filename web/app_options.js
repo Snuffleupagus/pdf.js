@@ -200,6 +200,11 @@ const defaultOptions = {
     value: false,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
+  ignoreDestinationPosition: {
+    /** @type {boolean} */
+    value: false,
+    kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
+  },
   ignoreDestinationZoom: {
     /** @type {boolean} */
     value: false,
