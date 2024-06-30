@@ -27,7 +27,7 @@ const MATCHES_COUNT_LIMIT = 1000;
 class PDFFindBar {
   #resizeObserver = new ResizeObserver(this.#resizeObserverCallback.bind(this));
 
-  constructor(options, eventBus) {
+  constructor(options, eventBus, abortSignal) {
     this.opened = false;
 
     this.bar = options.bar;
@@ -43,51 +43,97 @@ class PDFFindBar {
     this.findNextButton = options.findNextButton;
     this.eventBus = eventBus;
 
+    const eventOpts = { signal: abortSignal };
     // Add event listeners to the DOM elements.
-    this.toggleButton.addEventListener("click", () => {
-      this.toggle();
-    });
+    this.toggleButton.addEventListener(
+      "click",
+      () => {
+        this.toggle();
+      },
+      eventOpts
+    );
 
-    this.findField.addEventListener("input", () => {
-      this.dispatchEvent("");
-    });
+    this.findField.addEventListener(
+      "input",
+      () => {
+        this.dispatchEvent("");
+      },
+      eventOpts
+    );
 
-    this.bar.addEventListener("keydown", e => {
-      switch (e.keyCode) {
-        case 13: // Enter
-          if (e.target === this.findField) {
-            this.dispatchEvent("again", e.shiftKey);
-          }
-          break;
-        case 27: // Escape
-          this.close();
-          break;
-      }
-    });
+    this.bar.addEventListener(
+      "keydown",
+      e => {
+        switch (e.keyCode) {
+          case 13: // Enter
+            if (e.target === this.findField) {
+              this.dispatchEvent("again", e.shiftKey);
+            }
+            break;
+          case 27: // Escape
+            this.close();
+            break;
+        }
+      },
+      eventOpts
+    );
 
-    this.findPreviousButton.addEventListener("click", () => {
-      this.dispatchEvent("again", true);
-    });
+    this.findPreviousButton.addEventListener(
+      "click",
+      () => {
+        this.dispatchEvent("again", true);
+      },
+      eventOpts
+    );
 
-    this.findNextButton.addEventListener("click", () => {
-      this.dispatchEvent("again", false);
-    });
+    this.findNextButton.addEventListener(
+      "click",
+      () => {
+        this.dispatchEvent("again", false);
+      },
+      eventOpts
+    );
 
-    this.highlightAll.addEventListener("click", () => {
-      this.dispatchEvent("highlightallchange");
-    });
+    this.highlightAll.addEventListener(
+      "click",
+      () => {
+        this.dispatchEvent("highlightallchange");
+      },
+      eventOpts
+    );
 
-    this.caseSensitive.addEventListener("click", () => {
-      this.dispatchEvent("casesensitivitychange");
-    });
+    this.caseSensitive.addEventListener(
+      "click",
+      () => {
+        this.dispatchEvent("casesensitivitychange");
+      },
+      eventOpts
+    );
 
-    this.entireWord.addEventListener("click", () => {
-      this.dispatchEvent("entirewordchange");
-    });
+    this.entireWord.addEventListener(
+      "click",
+      () => {
+        this.dispatchEvent("entirewordchange");
+      },
+      eventOpts
+    );
 
-    this.matchDiacritics.addEventListener("click", () => {
-      this.dispatchEvent("diacriticmatchingchange");
-    });
+    this.matchDiacritics.addEventListener(
+      "click",
+      () => {
+        this.dispatchEvent("diacriticmatchingchange");
+      },
+      eventOpts
+    );
+
+    abortSignal?.addEventListener(
+      "abort",
+      () => {
+        this.#resizeObserver.disconnect();
+        this.#resizeObserver = null;
+      },
+      { once: true }
+    );
   }
 
   reset() {

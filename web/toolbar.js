@@ -50,8 +50,9 @@ class Toolbar {
   /**
    * @param {ToolbarOptions} options
    * @param {EventBus} eventBus
+   * @param {AbortSignal} [abortSignal] - The AbortSignal for the window events.
    */
-  constructor(options, eventBus) {
+  constructor(options, eventBus, abortSignal) {
     this.#opts = options;
     this.eventBus = eventBus;
     const buttons = [
@@ -112,7 +113,7 @@ class Toolbar {
     ];
 
     // Bind the event listeners for click and various other actions.
-    this.#bindListeners(buttons);
+    this.#bindListeners(buttons, abortSignal);
 
     if (options.editorHighlightColorPicker) {
       eventBus._on(
@@ -124,17 +125,21 @@ class Toolbar {
           );
         },
         // Once the color picker has been added, we don't want to add it again.
-        { once: true }
+        { once: true, signal: abortSignal }
       );
     }
 
-    eventBus._on("showannotationeditorui", ({ mode }) => {
-      switch (mode) {
-        case AnnotationEditorType.HIGHLIGHT:
-          options.editorHighlightButton.click();
-          break;
-      }
-    });
+    eventBus._on(
+      "showannotationeditorui",
+      ({ mode }) => {
+        switch (mode) {
+          case AnnotationEditorType.HIGHLIGHT:
+            options.editorHighlightButton.click();
+            break;
+        }
+      },
+      { signal: abortSignal }
+    );
 
     this.reset();
   }
@@ -177,62 +182,84 @@ class Toolbar {
     this.#editorModeChanged({ mode: AnnotationEditorType.DISABLE });
   }
 
-  #bindListeners(buttons) {
+  #bindListeners(buttons, abortSignal) {
     const { eventBus } = this;
     const { pageNumber, scaleSelect } = this.#opts;
+    const eventOpts = { signal: abortSignal };
     const self = this;
 
     // The buttons within the toolbar.
     for (const { element, eventName, eventDetails } of buttons) {
-      element.addEventListener("click", evt => {
-        if (eventName !== null) {
-          eventBus.dispatch(eventName, {
-            source: this,
-            ...eventDetails,
-            // evt.detail is the number of clicks.
-            isFromKeyboard: evt.detail === 0,
-          });
-        }
-      });
+      element.addEventListener(
+        "click",
+        evt => {
+          if (eventName !== null) {
+            eventBus.dispatch(eventName, {
+              source: this,
+              ...eventDetails,
+              // evt.detail is the number of clicks.
+              isFromKeyboard: evt.detail === 0,
+            });
+          }
+        },
+        eventOpts
+      );
     }
     // The non-button elements within the toolbar.
-    pageNumber.addEventListener("click", function () {
-      this.select();
-    });
-    pageNumber.addEventListener("change", function () {
-      eventBus.dispatch("pagenumberchanged", {
-        source: self,
-        value: this.value,
-      });
-    });
+    pageNumber.addEventListener(
+      "click",
+      function () {
+        this.select();
+      },
+      eventOpts
+    );
+    pageNumber.addEventListener(
+      "change",
+      function () {
+        eventBus.dispatch("pagenumberchanged", {
+          source: self,
+          value: this.value,
+        });
+      },
+      eventOpts
+    );
 
-    scaleSelect.addEventListener("change", function () {
-      if (this.value === "custom") {
-        return;
-      }
-      eventBus.dispatch("scalechanged", {
-        source: self,
-        value: this.value,
-      });
-    });
+    scaleSelect.addEventListener(
+      "change",
+      function () {
+        if (this.value === "custom") {
+          return;
+        }
+        eventBus.dispatch("scalechanged", {
+          source: self,
+          value: this.value,
+        });
+      },
+      eventOpts
+    );
     // Here we depend on browsers dispatching the "click" event *after* the
     // "change" event, when the <select>-element changes.
-    scaleSelect.addEventListener("click", function ({ target }) {
-      // Remove focus when an <option>-element was *clicked*, to improve the UX
-      // for mouse users (fixes bug 1300525 and issue 4923).
-      if (
-        this.value === self.pageScaleValue &&
-        target.tagName.toUpperCase() === "OPTION"
-      ) {
-        this.blur();
-      }
-    });
+    scaleSelect.addEventListener(
+      "click",
+      function ({ target }) {
+        // Remove focus when an <option>-element was *clicked*, to improve
+        // the UX for mouse users (fixes bug 1300525 and issue 4923).
+        if (
+          this.value === self.pageScaleValue &&
+          target.tagName.toUpperCase() === "OPTION"
+        ) {
+          this.blur();
+        }
+      },
+      eventOpts
+    );
     // Suppress context menus for some controls.
     scaleSelect.oncontextmenu = noContextMenu;
 
     eventBus._on(
       "annotationeditormodechanged",
-      this.#editorModeChanged.bind(this)
+      this.#editorModeChanged.bind(this),
+      eventOpts
     );
   }
 

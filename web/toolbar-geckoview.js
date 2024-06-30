@@ -28,9 +28,10 @@ class Toolbar {
   /**
    * @param {ToolbarOptions} options
    * @param {EventBus} eventBus
+   * @param {AbortSignal} [abortSignal] - The AbortSignal for the window events.
    * @param {Object} nimbusData - Nimbus configuration.
    */
-  constructor(options, eventBus, nimbusData) {
+  constructor(options, eventBus, abortSignal, nimbusData) {
     this.#eventBus = eventBus;
     const buttons = [
       {
@@ -61,7 +62,7 @@ class Toolbar {
     }
 
     // Bind the event listeners for click and various other actions.
-    this.#bindListeners(options);
+    this.#bindListeners(options, abortSignal);
   }
 
   setPageNumber(pageNumber, pageLabel) {}
@@ -72,21 +73,29 @@ class Toolbar {
 
   reset() {}
 
-  #bindListeners(options) {
+  #bindListeners(options, abortSignal) {
+    const eventOpts = { signal: abortSignal };
     // The buttons within the toolbar.
     for (const { element, eventName, eventDetails } of this.#buttons) {
-      element.addEventListener("click", evt => {
-        if (eventName !== null) {
-          this.#eventBus.dispatch(eventName, { source: this, ...eventDetails });
-          this.#eventBus.dispatch("reporttelemetry", {
-            source: this,
-            details: {
-              type: "gv-buttons",
-              data: { id: `${element.id}_tapped` },
-            },
-          });
-        }
-      });
+      element.addEventListener(
+        "click",
+        evt => {
+          if (eventName !== null) {
+            this.#eventBus.dispatch(eventName, {
+              source: this,
+              ...eventDetails,
+            });
+            this.#eventBus.dispatch("reporttelemetry", {
+              source: this,
+              details: {
+                type: "gv-buttons",
+                data: { id: `${element.id}_tapped` },
+              },
+            });
+          }
+        },
+        eventOpts
+      );
     }
   }
 

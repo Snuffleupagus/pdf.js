@@ -391,6 +391,7 @@ const PDFViewerApplication = {
    */
   async _initializeViewerComponents() {
     const { appConfig, externalServices, l10n } = this;
+
     let eventBus;
     if (typeof PDFJSDev !== "undefined" && PDFJSDev.test("MOZCENTRAL")) {
       eventBus = new FirefoxEventBus(
@@ -418,6 +419,7 @@ const PDFViewerApplication = {
     });
     this.pdfLinkService = pdfLinkService;
 
+    const abortSignal = this._globalAbortController.signal;
     const downloadManager = (this.downloadManager = new DownloadManager());
 
     const findController = new PDFFindController({
@@ -456,8 +458,8 @@ const PDFViewerApplication = {
           eventBus
         )
       : null;
-
     const enableHWA = AppOptions.get("enableHWA");
+
     const pdfViewer = new PDFViewer({
       container,
       viewer,
@@ -483,7 +485,7 @@ const PDFViewerApplication = {
       enablePermissions: AppOptions.get("enablePermissions"),
       pageColors,
       mlManager: this.mlManager,
-      abortSignal: this._globalAbortController.signal,
+      abortSignal,
       enableHWA,
     });
     this.pdfViewer = pdfViewer;
@@ -499,7 +501,7 @@ const PDFViewerApplication = {
         renderingQueue: pdfRenderingQueue,
         linkService: pdfLinkService,
         pageColors,
-        abortSignal: this._globalAbortController.signal,
+        abortSignal,
         enableHWA,
       });
       pdfRenderingQueue.setThumbnailViewer(this.pdfThumbnailViewer);
@@ -516,7 +518,7 @@ const PDFViewerApplication = {
     }
 
     if (!this.supportsIntegratedFind && appConfig.findBar) {
-      this.findBar = new PDFFindBar(appConfig.findBar, eventBus);
+      this.findBar = new PDFFindBar(appConfig.findBar, eventBus, abortSignal);
     }
 
     if (appConfig.annotationEditorParams) {
@@ -532,7 +534,8 @@ const PDFViewerApplication = {
 
         this.annotationEditorParams = new AnnotationEditorParams(
           appConfig.annotationEditorParams,
-          eventBus
+          eventBus,
+          abortSignal
         );
       } else {
         for (const id of ["editorModeButtons", "editorModeSeparator"]) {
@@ -570,17 +573,19 @@ const PDFViewerApplication = {
         this.toolbar = new Toolbar(
           appConfig.toolbar,
           eventBus,
+          abortSignal,
           await this._nimbusDataPromise
         );
       } else {
-        this.toolbar = new Toolbar(appConfig.toolbar, eventBus);
+        this.toolbar = new Toolbar(appConfig.toolbar, eventBus, abortSignal);
       }
     }
 
     if (appConfig.secondaryToolbar) {
       this.secondaryToolbar = new SecondaryToolbar(
         appConfig.secondaryToolbar,
-        eventBus
+        eventBus,
+        abortSignal
       );
     }
 
@@ -635,6 +640,7 @@ const PDFViewerApplication = {
         elements: appConfig.sidebar,
         eventBus,
         l10n,
+        abortSignal,
       });
       this.pdfSidebar.onToggled = this.forceRendering.bind(this);
       this.pdfSidebar.onUpdateThumbnails = () => {
@@ -2128,8 +2134,6 @@ const PDFViewerApplication = {
 
     this._globalAbortController?.abort();
     this._globalAbortController = null;
-
-    this.findBar?.close();
 
     await Promise.all([this.l10n?.destroy(), this.close()]);
   },

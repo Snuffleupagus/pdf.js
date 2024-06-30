@@ -59,8 +59,9 @@ class SecondaryToolbar {
   /**
    * @param {SecondaryToolbarOptions} options
    * @param {EventBus} eventBus
+   * @param {AbortSignal} [abortSignal] - The AbortSignal for the window events.
    */
-  constructor(options, eventBus) {
+  constructor(options, eventBus, abortSignal) {
     this.#opts = options;
     const buttons = [
       {
@@ -156,7 +157,7 @@ class SecondaryToolbar {
 
     // Bind the event listeners for click, cursor tool, and scroll/spread mode
     // actions.
-    this.#bindListeners(buttons);
+    this.#bindListeners(buttons, abortSignal);
 
     this.reset();
   }
@@ -203,34 +204,51 @@ class SecondaryToolbar {
     pageRotateCcwButton.disabled = this.pagesCount === 0;
   }
 
-  #bindListeners(buttons) {
+  #bindListeners(buttons, abortSignal) {
     const { eventBus } = this;
     const { toggleButton } = this.#opts;
+    const eventOpts = { signal: abortSignal };
     // Button to toggle the visibility of the secondary toolbar.
-    toggleButton.addEventListener("click", this.toggle.bind(this));
+    toggleButton.addEventListener("click", this.toggle.bind(this), eventOpts);
 
     // All items within the secondary toolbar.
     for (const { element, eventName, close, eventDetails } of buttons) {
-      element.addEventListener("click", evt => {
-        if (eventName !== null) {
-          eventBus.dispatch(eventName, { source: this, ...eventDetails });
-        }
-        if (close) {
-          this.close();
-        }
-        eventBus.dispatch("reporttelemetry", {
-          source: this,
-          details: {
-            type: "buttons",
-            data: { id: element.id },
-          },
-        });
-      });
+      element.addEventListener(
+        "click",
+        evt => {
+          if (eventName !== null) {
+            eventBus.dispatch(eventName, { source: this, ...eventDetails });
+          }
+          if (close) {
+            this.close();
+          }
+          eventBus.dispatch("reporttelemetry", {
+            source: this,
+            details: {
+              type: "buttons",
+              data: { id: element.id },
+            },
+          });
+        },
+        eventOpts
+      );
     }
 
-    eventBus._on("cursortoolchanged", this.#cursorToolChanged.bind(this));
-    eventBus._on("scrollmodechanged", this.#scrollModeChanged.bind(this));
-    eventBus._on("spreadmodechanged", this.#spreadModeChanged.bind(this));
+    eventBus._on(
+      "cursortoolchanged",
+      this.#cursorToolChanged.bind(this),
+      eventOpts
+    );
+    eventBus._on(
+      "scrollmodechanged",
+      this.#scrollModeChanged.bind(this),
+      eventOpts
+    );
+    eventBus._on(
+      "spreadmodechanged",
+      this.#spreadModeChanged.bind(this),
+      eventOpts
+    );
   }
 
   #cursorToolChanged({ tool }) {

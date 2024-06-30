@@ -34,6 +34,8 @@ const UI_NOTIFICATION_CLASS = "pdfSidebarNotification";
  * @property {PDFSidebarElements} elements - The DOM elements.
  * @property {EventBus} eventBus - The application event bus.
  * @property {IL10n} l10n - The localization service.
+ * @property {AbortSignal} [abortSignal] - The AbortSignal for the window
+ *   events.
  */
 
 /**
@@ -80,7 +82,7 @@ class PDFSidebar {
   /**
    * @param {PDFSidebarOptions} options
    */
-  constructor({ elements, eventBus, l10n }) {
+  constructor({ elements, eventBus, l10n, abortSignal }) {
     this.isOpen = false;
     this.active = SidebarView.THUMBS;
     this.isInitialViewSet = false;
@@ -113,7 +115,7 @@ class PDFSidebar {
     this.eventBus = eventBus;
 
     this.#isRTL = l10n.getDirection() === "rtl";
-    this.#addEventListeners();
+    this.#addEventListeners(abortSignal);
   }
 
   reset() {
@@ -324,41 +326,76 @@ class PDFSidebar {
     }
   }
 
-  #addEventListeners() {
-    this.sidebarContainer.addEventListener("transitionend", evt => {
-      if (evt.target === this.sidebarContainer) {
-        this.outerContainer.classList.remove("sidebarMoving");
-        // Ensure that rendering is triggered after opening/closing the sidebar.
-        this.eventBus.dispatch("resize", { source: this });
-      }
-    });
+  #addEventListeners(abortSignal) {
+    const eventOpts = { signal: abortSignal };
 
-    this.toggleButton.addEventListener("click", evt => {
-      this.toggle(evt);
-    });
+    this.sidebarContainer.addEventListener(
+      "transitionend",
+      evt => {
+        if (evt.target === this.sidebarContainer) {
+          this.outerContainer.classList.remove("sidebarMoving");
+          // Ensure that rendering is triggered after opening/closing
+          // the sidebar.
+          this.eventBus.dispatch("resize", { source: this });
+        }
+      },
+      eventOpts
+    );
+
+    this.toggleButton.addEventListener(
+      "click",
+      evt => {
+        this.toggle(evt);
+      },
+      eventOpts
+    );
 
     // Buttons for switching views.
-    this.thumbnailButton.addEventListener("click", () => {
-      this.switchView(SidebarView.THUMBS);
-    });
+    this.thumbnailButton.addEventListener(
+      "click",
+      () => {
+        this.switchView(SidebarView.THUMBS);
+      },
+      eventOpts
+    );
 
-    this.outlineButton.addEventListener("click", () => {
-      this.switchView(SidebarView.OUTLINE);
-    });
-    this.outlineButton.addEventListener("dblclick", () => {
-      this.eventBus.dispatch("toggleoutlinetree", { source: this });
-    });
+    this.outlineButton.addEventListener(
+      "click",
+      () => {
+        this.switchView(SidebarView.OUTLINE);
+      },
+      eventOpts
+    );
+    this.outlineButton.addEventListener(
+      "dblclick",
+      () => {
+        this.eventBus.dispatch("toggleoutlinetree", { source: this });
+      },
+      eventOpts
+    );
 
-    this.attachmentsButton.addEventListener("click", () => {
-      this.switchView(SidebarView.ATTACHMENTS);
-    });
+    this.attachmentsButton.addEventListener(
+      "click",
+      () => {
+        this.switchView(SidebarView.ATTACHMENTS);
+      },
+      eventOpts
+    );
 
-    this.layersButton.addEventListener("click", () => {
-      this.switchView(SidebarView.LAYERS);
-    });
-    this.layersButton.addEventListener("dblclick", () => {
-      this.eventBus.dispatch("resetlayers", { source: this });
-    });
+    this.layersButton.addEventListener(
+      "click",
+      () => {
+        this.switchView(SidebarView.LAYERS);
+      },
+      eventOpts
+    );
+    this.layersButton.addEventListener(
+      "dblclick",
+      () => {
+        this.eventBus.dispatch("resetlayers", { source: this });
+      },
+      eventOpts
+    );
 
     // Buttons for view-specific options.
     this._currentOutlineItemButton.addEventListener("click", () => {
@@ -397,64 +434,80 @@ class PDFSidebar {
       );
     });
 
-    this.eventBus._on("layersloaded", evt => {
-      onTreeLoaded(evt.layersCount, this.layersButton, SidebarView.LAYERS);
-    });
+    this.eventBus._on(
+      "layersloaded",
+      evt => {
+        onTreeLoaded(evt.layersCount, this.layersButton, SidebarView.LAYERS);
+      },
+      eventOpts
+    );
 
     // Update the thumbnailViewer, if visible, when exiting presentation mode.
-    this.eventBus._on("presentationmodechanged", evt => {
-      if (
-        evt.state === PresentationModeState.NORMAL &&
-        this.visibleView === SidebarView.THUMBS
-      ) {
-        this.onUpdateThumbnails();
-      }
-    });
+    this.eventBus._on(
+      "presentationmodechanged",
+      evt => {
+        if (
+          evt.state === PresentationModeState.NORMAL &&
+          this.visibleView === SidebarView.THUMBS
+        ) {
+          this.onUpdateThumbnails();
+        }
+      },
+      eventOpts
+    );
 
     // Handle resizing of the sidebar.
-    this.resizer.addEventListener("mousedown", evt => {
-      if (evt.button !== 0) {
-        return;
-      }
-      // Disable the `transition-duration` rules when sidebar resizing begins,
-      // in order to improve responsiveness and to avoid visual glitches.
-      this.outerContainer.classList.add(SIDEBAR_RESIZING_CLASS);
-
-      window.addEventListener("mousemove", this.#mouseMoveBound);
-      window.addEventListener("mouseup", this.#mouseUpBound);
-    });
-
-    this.eventBus._on("resize", evt => {
-      // When the *entire* viewer is resized, such that it becomes narrower,
-      // ensure that the sidebar doesn't end up being too wide.
-      if (evt.source !== window) {
-        return;
-      }
-      // Always reset the cached width when the viewer is resized.
-      this.#outerContainerWidth = null;
-
-      if (!this.#width) {
-        // The sidebar hasn't been resized, hence no need to adjust its width.
-        return;
-      }
-      // NOTE: If the sidebar is closed, we don't need to worry about
-      //       visual glitches nor ensure that rendering is triggered.
-      if (!this.isOpen) {
-        this.#updateWidth(this.#width);
-        return;
-      }
-      this.outerContainer.classList.add(SIDEBAR_RESIZING_CLASS);
-      const updated = this.#updateWidth(this.#width);
-
-      Promise.resolve().then(() => {
-        this.outerContainer.classList.remove(SIDEBAR_RESIZING_CLASS);
-        // Trigger rendering if the sidebar width changed, to avoid
-        // depending on the order in which 'resize' events are handled.
-        if (updated) {
-          this.eventBus.dispatch("resize", { source: this });
+    this.resizer.addEventListener(
+      "mousedown",
+      evt => {
+        if (evt.button !== 0) {
+          return;
         }
-      });
-    });
+        // Disable the `transition-duration` rules when sidebar resizing begins,
+        // in order to improve responsiveness and to avoid visual glitches.
+        this.outerContainer.classList.add(SIDEBAR_RESIZING_CLASS);
+
+        window.addEventListener("mousemove", this.#mouseMoveBound);
+        window.addEventListener("mouseup", this.#mouseUpBound);
+      },
+      eventOpts
+    );
+
+    this.eventBus._on(
+      "resize",
+      evt => {
+        // When the *entire* viewer is resized, such that it becomes narrower,
+        // ensure that the sidebar doesn't end up being too wide.
+        if (evt.source !== window) {
+          return;
+        }
+        // Always reset the cached width when the viewer is resized.
+        this.#outerContainerWidth = null;
+
+        if (!this.#width) {
+          // The sidebar hasn't been resized, hence no need to adjust its width.
+          return;
+        }
+        // NOTE: If the sidebar is closed, we don't need to worry about
+        //       visual glitches nor ensure that rendering is triggered.
+        if (!this.isOpen) {
+          this.#updateWidth(this.#width);
+          return;
+        }
+        this.outerContainer.classList.add(SIDEBAR_RESIZING_CLASS);
+        const updated = this.#updateWidth(this.#width);
+
+        Promise.resolve().then(() => {
+          this.outerContainer.classList.remove(SIDEBAR_RESIZING_CLASS);
+          // Trigger rendering if the sidebar width changed, to avoid
+          // depending on the order in which 'resize' events are handled.
+          if (updated) {
+            this.eventBus.dispatch("resize", { source: this });
+          }
+        });
+      },
+      eventOpts
+    );
   }
 
   /**
