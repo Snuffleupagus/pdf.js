@@ -79,8 +79,6 @@ class TextLayer {
 
   #transform = null;
 
-  static #ascentCache = new Map();
-
   static #canvasContexts = new Map();
 
   static #canvasCtxFonts = new WeakMap();
@@ -305,7 +303,7 @@ class TextLayer {
       style.fontFamily;
     const fontHeight = Math.hypot(tx[2], tx[3]);
     const fontAscent =
-      fontHeight * TextLayer.#getAscent(fontFamily, this.#lang);
+      fontHeight * TextLayer.#getAscent(this.#layoutTextParams.ctx, fontFamily);
 
     let left, top;
     if (angle === 0) {
@@ -428,8 +426,6 @@ class TextLayer {
     if (this.#pendingTextLayers.size > 0) {
       return;
     }
-    this.#ascentCache.clear();
-
     for (const { canvas } of this.#canvasContexts.values()) {
       canvas.remove();
     }
@@ -459,8 +455,8 @@ class TextLayer {
       });
       this.#canvasContexts.set(lang, ctx);
 
-      // Also, initialize state for the `#ensureCtxFont` method.
-      this.#canvasCtxFonts.set(ctx, { size: 0, family: "" });
+      // Also, initialize state for the `#ensureCtxFont`/`#getAscent` method.
+      this.#canvasCtxFonts.set(ctx, { size: 0, family: "", ascent: {} });
     }
     return ctx;
   }
@@ -496,12 +492,12 @@ class TextLayer {
     div.remove();
   }
 
-  static #getAscent(fontFamily, lang) {
-    const cachedAscent = this.#ascentCache.get(fontFamily);
-    if (cachedAscent) {
-      return cachedAscent;
+  static #getAscent(ctx, fontFamily) {
+    const cachedAscent = this.#canvasCtxFonts.get(ctx).ascent,
+      cachedRatio = cachedAscent[fontFamily];
+    if (cachedRatio) {
+      return cachedRatio;
     }
-    const ctx = this.#getCtx(lang);
 
     ctx.canvas.width = ctx.canvas.height = DEFAULT_FONT_SIZE;
     this.#ensureCtxFont(ctx, DEFAULT_FONT_SIZE, fontFamily);
@@ -511,11 +507,10 @@ class TextLayer {
     let ascent = metrics.fontBoundingBoxAscent;
     let descent = Math.abs(metrics.fontBoundingBoxDescent);
     if (ascent) {
-      const ratio = ascent / (ascent + descent);
-      this.#ascentCache.set(fontFamily, ratio);
-
       ctx.canvas.width = ctx.canvas.height = 0;
-      return ratio;
+
+      return (cachedAscent[fontFamily] =
+        /* ratio = */ ascent / (ascent + descent));
     }
 
     // Try basic heuristic to guess ascent/descent.
@@ -552,12 +547,11 @@ class TextLayer {
         break;
       }
     }
-
     ctx.canvas.width = ctx.canvas.height = 0;
 
-    const ratio = ascent ? ascent / (ascent + descent) : DEFAULT_FONT_ASCENT;
-    this.#ascentCache.set(fontFamily, ratio);
-    return ratio;
+    return (cachedAscent[fontFamily] = /* ratio = */ ascent
+      ? ascent / (ascent + descent)
+      : DEFAULT_FONT_ASCENT);
   }
 }
 
