@@ -1690,12 +1690,12 @@ class MarkupAnnotation extends Annotation {
       buffer.push(`${fillColor[0]} ${fillColor[1]} ${fillColor[2]} rg`);
     }
 
-    let pointsArray = this.data.quadPoints;
-    if (!pointsArray) {
-      // If there are no quadpoints, the rectangle should be used instead.
-      // Convert the rectangle definition to a points array similar to how the
-      // quadpoints are defined.
-      pointsArray = Float32Array.from([
+    // If there are no quadpoints, the rectangle should be used instead.
+    // Convert the rectangle definition to a points array similar to how the
+    // quadpoints are defined.
+    const pointsArray =
+      this.data.quadPoints ||
+      Float32Array.from([
         this.rectangle[0],
         this.rectangle[3],
         this.rectangle[2],
@@ -1705,7 +1705,6 @@ class MarkupAnnotation extends Annotation {
         this.rectangle[2],
         this.rectangle[1],
       ]);
-    }
 
     for (let i = 0, ii = pointsArray.length; i < ii; i += 8) {
       const [mX, MX, mY, MY] = pointsCallback(
@@ -1759,11 +1758,8 @@ class MarkupAnnotation extends Annotation {
   }
 
   static async createNewAnnotation(xref, annotation, dependencies, params) {
-    if (!annotation.ref) {
-      annotation.ref = xref.getNewTemporaryRef();
-    }
+    const annotationRef = (annotation.ref ||= xref.getNewTemporaryRef());
 
-    const annotationRef = annotation.ref;
     const ap = await this.createNewAppearanceStream(annotation, xref, params);
     const buffer = [];
     let annotationDict;
