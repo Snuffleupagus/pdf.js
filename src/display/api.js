@@ -27,7 +27,6 @@ import {
   InvalidPDFException,
   isNodeJS,
   MAX_IMAGE_SIZE_TO_CACHE,
-  MissingPDFException,
   PasswordException,
   RenderingIntentFlag,
   setVerbosityLevel,
@@ -2753,11 +2752,12 @@ class WorkerTransport {
         case "InvalidPDFException":
           reason = new InvalidPDFException(ex.message);
           break;
-        case "MissingPDFException":
-          reason = new MissingPDFException(ex.message);
-          break;
         case "UnexpectedResponseException":
-          reason = new UnexpectedResponseException(ex.message, ex.status);
+          reason = new UnexpectedResponseException(
+            ex.message,
+            ex.status,
+            ex.url
+          );
           break;
         case "UnknownErrorException":
           reason = new UnknownErrorException(ex.message, ex.details);

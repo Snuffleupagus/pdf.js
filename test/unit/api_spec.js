@@ -20,12 +20,12 @@ import {
   ImageKind,
   InvalidPDFException,
   isNodeJS,
-  MissingPDFException,
   objectSize,
   OPS,
   PasswordException,
   PasswordResponses,
   PermissionFlag,
+  UnexpectedResponseException,
   UnknownErrorException,
 } from "../../src/shared/util.js";
 import {
@@ -297,7 +297,9 @@ describe("api", function () {
         // Shouldn't get here.
         expect(false).toEqual(true);
       } catch (reason) {
-        expect(reason instanceof MissingPDFException).toEqual(true);
+        expect(reason instanceof UnexpectedResponseException).toEqual(true);
+        expect(reason.status).toEqual(isNodeJS ? 0 : 404);
+        expect(reason.url.endsWith("/test/pdfs/non-existent.pdf")).toBeTrue();
       }
 
       await loadingTask.destroy();

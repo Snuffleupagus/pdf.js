@@ -20,10 +20,7 @@ import {
   validateRangeRequestCapabilities,
   validateResponseStatus,
 } from "../../src/display/network_utils.js";
-import {
-  MissingPDFException,
-  UnexpectedResponseException,
-} from "../../src/shared/util.js";
+import { UnexpectedResponseException } from "../../src/shared/util.js";
 
 describe("network_utils", function () {
   describe("createHeaders", function () {
@@ -372,27 +369,45 @@ describe("network_utils", function () {
 
   describe("createResponseStatusError", function () {
     it("handles missing PDF file responses", function () {
-      expect(createResponseStatusError(404, "https://foo.com/bar.pdf")).toEqual(
-        new MissingPDFException('Missing PDF "https://foo.com/bar.pdf".')
+      const status1 = 404,
+        url1 = "https://foo.com/bar.pdf";
+      expect(createResponseStatusError(status1, url1)).toEqual(
+        new UnexpectedResponseException(
+          `Unexpected server response (${status1}) while retrieving PDF "${url1}".`,
+          status1,
+          url1
+        )
       );
 
-      expect(createResponseStatusError(0, "file://foo.pdf")).toEqual(
-        new MissingPDFException('Missing PDF "file://foo.pdf".')
+      const status2 = 0,
+        url2 = "file://foo.pdf";
+      expect(createResponseStatusError(status2, url2)).toEqual(
+        new UnexpectedResponseException(
+          `Unexpected server response (${status2}) while retrieving PDF "${url2}".`,
+          status2,
+          url2
+        )
       );
     });
 
     it("handles unexpected responses", function () {
-      expect(createResponseStatusError(302, "https://foo.com/bar.pdf")).toEqual(
+      const status1 = 302,
+        url1 = "https://foo.com/bar.pdf";
+      expect(createResponseStatusError(status1, url1)).toEqual(
         new UnexpectedResponseException(
-          "Unexpected server response (302) while retrieving PDF " +
-            '"https://foo.com/bar.pdf".'
+          `Unexpected server response (${status1}) while retrieving PDF "${url1}".`,
+          status1,
+          url1
         )
       );
 
-      expect(createResponseStatusError(0, "https://foo.com/bar.pdf")).toEqual(
+      const status2 = 0,
+        url2 = "https://foo.com/bar.pdf";
+      expect(createResponseStatusError(status2, url2)).toEqual(
         new UnexpectedResponseException(
-          "Unexpected server response (0) while retrieving PDF " +
-            '"https://foo.com/bar.pdf".'
+          `Unexpected server response (${status2}) while retrieving PDF "${url2}".`,
+          status2,
+          url2
         )
       );
     });

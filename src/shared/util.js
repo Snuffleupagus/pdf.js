@@ -501,16 +501,11 @@ class InvalidPDFException extends BaseException {
   }
 }
 
-class MissingPDFException extends BaseException {
-  constructor(msg) {
-    super(msg, "MissingPDFException");
-  }
-}
-
 class UnexpectedResponseException extends BaseException {
-  constructor(msg, status) {
+  constructor(msg, status, url) {
     super(msg, "UnexpectedResponseException");
     this.status = status;
+    this.url = url;
   }
 }
 
@@ -1161,7 +1156,6 @@ export {
   LINE_DESCENT_FACTOR,
   LINE_FACTOR,
   MAX_IMAGE_SIZE_TO_CACHE,
-  MissingPDFException,
   normalizeUnicode,
   objectFromMap,
   objectSize,

@@ -91,8 +91,6 @@ const PDFViewerApplication = {
         let key = "pdfjs-loading-error";
         if (reason instanceof pdfjsLib.InvalidPDFException) {
           key = "pdfjs-invalid-file-error";
-        } else if (reason instanceof pdfjsLib.MissingPDFException) {
-          key = "pdfjs-missing-file-error";
         } else if (reason instanceof pdfjsLib.UnexpectedResponseException) {
           key = "pdfjs-unexpected-response-error";
         }

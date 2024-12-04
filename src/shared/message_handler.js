@@ -16,7 +16,6 @@
 import {
   AbortException,
   assert,
-  MissingPDFException,
   PasswordException,
   UnexpectedResponseException,
   UnknownErrorException,
@@ -55,12 +54,14 @@ function wrapReason(reason) {
   switch (reason.name) {
     case "AbortException":
       return new AbortException(reason.message);
-    case "MissingPDFException":
-      return new MissingPDFException(reason.message);
     case "PasswordException":
       return new PasswordException(reason.message, reason.code);
     case "UnexpectedResponseException":
-      return new UnexpectedResponseException(reason.message, reason.status);
+      return new UnexpectedResponseException(
+        reason.message,
+        reason.status,
+        reason.url
+      );
     case "UnknownErrorException":
       return new UnknownErrorException(reason.message, reason.details);
     default:

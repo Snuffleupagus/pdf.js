@@ -20,7 +20,6 @@ import {
   info,
   InvalidPDFException,
   isNodeJS,
-  MissingPDFException,
   PasswordException,
   setVerbosityLevel,
   stringToPDFString,
@@ -348,7 +347,6 @@ class WorkerMessageHandler {
             });
         } else if (
           ex instanceof InvalidPDFException ||
-          ex instanceof MissingPDFException ||
           ex instanceof UnexpectedResponseException ||
           ex instanceof UnknownErrorException
         ) {

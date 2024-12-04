@@ -50,7 +50,6 @@ import {
   InvalidPDFException,
   isDataScheme,
   isPdfFile,
-  MissingPDFException,
   PDFWorker,
   shadow,
   stopEvent,
@@ -1092,8 +1091,6 @@ const PDFViewerApplication = {
         let key = "pdfjs-loading-error";
         if (reason instanceof InvalidPDFException) {
           key = "pdfjs-invalid-file-error";
-        } else if (reason instanceof MissingPDFException) {
-          key = "pdfjs-missing-file-error";
         } else if (reason instanceof UnexpectedResponseException) {
           key = "pdfjs-unexpected-response-error";
         }
