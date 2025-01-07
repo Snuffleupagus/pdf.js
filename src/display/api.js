@@ -25,7 +25,6 @@ import {
   getVerbosityLevel,
   info,
   isNodeJS,
-  MAX_IMAGE_SIZE_TO_CACHE,
   RenderingIntentFlag,
   setVerbosityLevel,
   shadow,
@@ -70,7 +69,6 @@ import { XfaText } from "./xfa_text.js";
 
 const DEFAULT_RANGE_CHUNK_SIZE = 65536; // 2^16 = 65536
 const RENDERING_CANCELLED_TIMEOUT = 100; // ms
-const DELAYED_CLEANUP_TIMEOUT = 5000; // ms
 
 const DefaultCanvasFactory =
   typeof PDFJSDev !== "undefined" && PDFJSDev.test("GENERIC") && isNodeJS
@@ -88,6 +86,13 @@ const DefaultStandardFontDataFactory =
   typeof PDFJSDev !== "undefined" && PDFJSDev.test("GENERIC") && isNodeJS
     ? NodeStandardFontDataFactory
     : DOMStandardFontDataFactory;
+
+const CleanupState = {
+  NONE: 0x01,
+  IMMEDIATE: 0x02,
+  TIMEOUT: 0x04,
+  GC: 0x08,
+};
 
 /**
  * @typedef { Int8Array | Uint8Array | Uint8ClampedArray |
@@ -1320,9 +1325,9 @@ class PDFDocumentProxy {
  * Proxy to a `PDFPage` in the worker thread.
  */
 class PDFPageProxy {
-  #delayedCleanupTimeout = null;
+  #cleanupState = CleanupState.NONE;
 
-  #pendingCleanup = false;
+  #cleanupTimeout = null;
 
   constructor(pageIndex, pageInfo, transport, pdfBug = false) {
     this._pageIndex = pageIndex;
@@ -1334,7 +1339,6 @@ class PDFPageProxy {
     this.commonObjs = transport.commonObjs;
     this.objs = new PDFObjects();
 
-    this._maybeCleanupAfterRender = false;
     this._intentStates = new Map();
     this.destroyed = false;
   }
@@ -1471,10 +1475,8 @@ class PDFPageProxy {
     );
     const { renderingIntent, cacheKey } = intentArgs;
     // If there was a pending destroy, cancel it so no cleanup happens during
-    // this call to render...
-    this.#pendingCleanup = false;
-    // ... and ensure that a delayed cleanup is always aborted.
-    this.#abortDelayedCleanup();
+    // this call to render.
+    this.#setCleanupState();
 
     optionalContentConfigPromise ||=
       this._transport.getOptionalContentConfig(renderingIntent);
@@ -1513,10 +1515,9 @@ class PDFPageProxy {
 
       // Attempt to reduce memory usage during *printing*, by always running
       // cleanup immediately once rendering has finished.
-      if (this._maybeCleanupAfterRender || intentPrint) {
-        this.#pendingCleanup = true;
-      }
-      this.#tryCleanup(/* delayed = */ !intentPrint);
+      this.#tryCleanup(
+        intentPrint ? CleanupState.IMMEDIATE : this.#delayedCleanupState
+      );
 
       if (error) {
         internalRenderTask.capability.reject(error);
@@ -1749,8 +1750,7 @@ class PDFPageProxy {
       }
     }
     this.objs.clear();
-    this.#pendingCleanup = false;
-    this.#abortDelayedCleanup();
+    this.#setCleanupState();
 
     return Promise.all(waitOn);
   }
@@ -1763,8 +1763,7 @@ class PDFPageProxy {
    * @returns {boolean} Indicates if clean-up was successfully run.
    */
   cleanup(resetStats = false) {
-    this.#pendingCleanup = true;
-    const success = this.#tryCleanup(/* delayed = */ false);
+    const success = this.#tryCleanup(CleanupState.IMMEDIATE);
 
     if (resetStats && success) {
       this._stats &&= new StatTimer();
@@ -1774,25 +1773,32 @@ class PDFPageProxy {
 
   /**
    * Attempts to clean up if rendering is in a state where that's possible.
-   * @param {boolean} [delayed] - Delay the cleanup, to e.g. improve zooming
-   *   performance in documents with large images.
-   *   The default value is `false`.
+   * @param {number} [cleanupState]
    * @returns {boolean} Indicates if clean-up was successfully run.
    */
-  #tryCleanup(delayed = false) {
-    this.#abortDelayedCleanup();
+  #tryCleanup(state) {
+    this.#setCleanupState(state);
 
-    if (!this.#pendingCleanup || this.destroyed) {
+    if (this.#cleanupState & CleanupState.NONE || this.destroyed) {
       return false;
     }
-    if (delayed) {
-      this.#delayedCleanupTimeout = setTimeout(() => {
-        this.#delayedCleanupTimeout = null;
-        this.#tryCleanup(/* delayed = */ false);
-      }, DELAYED_CLEANUP_TIMEOUT);
+    if (this.#cleanupState & CleanupState.TIMEOUT) {
+      this.#cleanupTimeout = setTimeout(() => {
+        this.#cleanupTimeout = null;
+        this.#tryCleanup(this.#cleanupState & ~CleanupState.TIMEOUT);
+      }, /* ms = */ 5000);
 
       return false;
     }
+    if (this.#cleanupState & CleanupState.GC) {
+      // TODO
+      return false;
+    }
+    assert(
+      this.#cleanupState & CleanupState.IMMEDIATE,
+      "Should cleanup immediately."
+    );
+
     for (const { renderTasks, operatorList } of this._intentStates.values()) {
       if (renderTasks.size > 0 || !operatorList.lastChunk) {
         return false;
@@ -1800,15 +1806,22 @@ class PDFPageProxy {
     }
     this._intentStates.clear();
     this.objs.clear();
-    this.#pendingCleanup = false;
+    this.#setCleanupState();
+
     return true;
   }
 
-  #abortDelayedCleanup() {
-    if (this.#delayedCleanupTimeout) {
-      clearTimeout(this.#delayedCleanupTimeout);
-      this.#delayedCleanupTimeout = null;
+  #setCleanupState(state = CleanupState.NONE) {
+    this.#cleanupState = state;
+
+    if (this.#cleanupTimeout) {
+      clearTimeout(this.#cleanupTimeout);
+      this.#cleanupTimeout = null;
     }
+  }
+
+  get #delayedCleanupState() {
+    return CleanupState.TIMEOUT + CleanupState.GC;
   }
 
   /**
@@ -1844,7 +1857,7 @@ class PDFPageProxy {
     }
 
     if (operatorListChunk.lastChunk) {
-      this.#tryCleanup(/* delayed = */ true);
+      this.#tryCleanup(this.#delayedCleanupState);
     }
   }
 
@@ -1907,7 +1920,7 @@ class PDFPageProxy {
             for (const internalRenderTask of intentState.renderTasks) {
               internalRenderTask.operatorListChanged();
             }
-            this.#tryCleanup(/* delayed = */ true);
+            this.#tryCleanup(this.#delayedCleanupState);
           }
 
           if (intentState.displayReadyCapability) {
@@ -2864,13 +2877,6 @@ class WorkerTransport {
 
       switch (type) {
         case "Image":
-          pageProxy.objs.resolve(id, imageData);
-
-          // Heuristic that will allow us not to store large data.
-          if (imageData?.dataLen > MAX_IMAGE_SIZE_TO_CACHE) {
-            pageProxy._maybeCleanupAfterRender = true;
-          }
-          break;
         case "Pattern":
           pageProxy.objs.resolve(id, imageData);
           break;
