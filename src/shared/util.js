@@ -1172,6 +1172,19 @@ if (
   };
 }
 
+// TODO: Remove this once the `javascript.options.experimental.math_sumprecise`
+//       preference is removed from Firefox.
+if (
+  (typeof PDFJSDev === "undefined" || PDFJSDev.test("SKIP_BABEL || TESTING")) &&
+  typeof Math.sumPrecise !== "function"
+) {
+  // Note that this isn't a "proper" polyfill, but since we're only using it to
+  // replace `Array.prototype.reduce()` invocations it should be fine.
+  Math.sumPrecise = function (numbers) {
+    return numbers.reduce((a, b) => a + b, 0);
+  };
+}
+
 export {
   _isValidExplicitDest,
   AbortException,
