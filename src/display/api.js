@@ -471,20 +471,7 @@ function getDocument(src = {}) {
           PDFJSDev.test("GENERIC") &&
           isNodeJS
         ) {
-          if (isValidFetchUrl(url)) {
-            if (
-              typeof fetch === "undefined" ||
-              typeof Response === "undefined" ||
-              !("body" in Response.prototype)
-            ) {
-              throw new Error(
-                "getDocument - the Fetch API was disabled in Node.js, see `--no-experimental-fetch`."
-              );
-            }
-            NetworkStream = PDFFetchStream;
-          } else {
-            NetworkStream = PDFNodeStream;
-          }
+          NetworkStream = isValidFetchUrl(url) ? PDFFetchStream : PDFNodeStream;
         } else {
           NetworkStream = isValidFetchUrl(url)
             ? PDFFetchStream
