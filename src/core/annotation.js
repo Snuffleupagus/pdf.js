@@ -73,6 +73,13 @@ import { ObjectLoader } from "./object_loader.js";
 import { OperatorList } from "./operator_list.js";
 import { XFAFactory } from "./xfa/factory.js";
 
+async function loadXFAFactory() {
+  await new Promise(resolve => {
+    setTimeout(resolve, 3000);
+  });
+  return XFAFactory;
+}
+
 class AnnotationFactory {
   static createGlobals(pdfManager) {
     return Promise.all([
@@ -138,7 +145,7 @@ class AnnotationFactory {
       ? await this._getPageIndex(xref, ref, annotationGlobals.pdfManager)
       : null;
 
-    return annotationGlobals.pdfManager.ensure(this, "_create", [
+    const annot = await annotationGlobals.pdfManager.ensure(this, "_create", [
       xref,
       ref,
       annotationGlobals,
@@ -148,6 +155,11 @@ class AnnotationFactory {
       pageIndex,
       pageRef,
     ]);
+
+    if (annot._promises) {
+      await Promise.all(annot._promises);
+    }
+    return annot;
   }
 
   /**
@@ -647,6 +659,8 @@ function getTransformMatrix(rect, bbox, matrix) {
 }
 
 class Annotation {
+  _promises = null;
+
   constructor(params) {
     const { dict, xref, annotationGlobals, ref, orphanFields } = params;
     const parentRef = orphanFields?.get(ref);
@@ -1675,8 +1689,18 @@ class MarkupAnnotation extends Annotation {
 
     this.data.popupRef = popupRef instanceof Ref ? popupRef.toString() : null;
 
-    if (dict.has("RC")) {
-      this.data.richText = XFAFactory.getRichTextAsHtml(dict.get("RC"));
+    const rc = dict.get("RC");
+    if (rc) {
+      this._promises ??= [];
+      this._promises.push(
+        loadXFAFactory()
+          .then(Factory => {
+            this.data.richText = Factory.getRichTextAsHtml(rc);
+          })
+          .catch(ex => {
+            warn(`MarkupAnnotation - richText: ${ex}`);
+          })
+      );
     }
   }
 
@@ -3860,8 +3884,18 @@ class PopupAnnotation extends Annotation {
     this.setContents(parentItem.get("Contents"));
     this.data.contentsObj = this._contents;
 
-    if (parentItem.has("RC")) {
-      this.data.richText = XFAFactory.getRichTextAsHtml(parentItem.get("RC"));
+    const rc = parentItem.get("RC");
+    if (rc) {
+      this._promises ??= [];
+      this._promises.push(
+        loadXFAFactory()
+          .then(Factory => {
+            this.data.richText = Factory.getRichTextAsHtml(rc);
+          })
+          .catch(ex => {
+            warn(`PopupAnnotation - richText: ${ex}`);
+          })
+      );
     }
 
     this.data.open = !!dict.get("Open");
