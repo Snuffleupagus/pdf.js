@@ -721,6 +721,8 @@ class PDFDataRangeTransport {
 
   onDataProgressiveDone() {
     this.#capability.promise.then(() => {
+      this.progressiveDone ||= true;
+
       for (const listener of this.#progressiveDoneListeners) {
         listener();
       }
