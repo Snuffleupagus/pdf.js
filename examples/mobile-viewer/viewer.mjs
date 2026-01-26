@@ -57,8 +57,7 @@ const PDFViewerApplication = {
       );
     }
 
-    const url = params.url;
-    const self = this;
+    const { url } = params;
     this.setTitleUsingUrl(url);
 
     // Loading document.
@@ -70,24 +69,22 @@ const PDFViewerApplication = {
     });
     this.pdfLoadingTask = loadingTask;
 
-    loadingTask.onProgress = function (progressData) {
-      self.progress(progressData.loaded / progressData.total);
-    };
+    loadingTask.onProgress = evt => this.progress(evt.percent);
 
     return loadingTask.promise.then(
-      function (pdfDocument) {
+      pdfDocument => {
         // Document loaded, specifying document for the viewer.
-        self.pdfDocument = pdfDocument;
-        self.pdfViewer.setDocument(pdfDocument);
-        self.pdfLinkService.setDocument(pdfDocument);
-        self.pdfHistory.initialize({
+        this.pdfDocument = pdfDocument;
+        this.pdfViewer.setDocument(pdfDocument);
+        this.pdfLinkService.setDocument(pdfDocument);
+        this.pdfHistory.initialize({
           fingerprint: pdfDocument.fingerprints[0],
         });
 
-        self.loadingBar.hide();
-        self.setTitleUsingMetadata(pdfDocument);
+        this.loadingBar.hide();
+        this.setTitleUsingMetadata(pdfDocument);
       },
-      function (reason) {
+      reason => {
         let key = "pdfjs-loading-error";
         if (reason instanceof pdfjsLib.InvalidPDFException) {
           key = "pdfjs-invalid-file-error";
@@ -96,10 +93,10 @@ const PDFViewerApplication = {
             ? "pdfjs-missing-file-error"
             : "pdfjs-unexpected-response-error";
         }
-        self.l10n.get(key).then(msg => {
-          self.error(msg, { message: reason?.message });
+        this.l10n.get(key).then(msg => {
+          this.error(msg, { message: reason.message });
         });
-        self.loadingBar.hide();
+        this.loadingBar.hide();
       }
     );
   },
@@ -153,27 +150,16 @@ const PDFViewerApplication = {
   },
 
   setTitleUsingMetadata(pdfDocument) {
-    const self = this;
-    pdfDocument.getMetadata().then(function (data) {
-      const info = data.info,
-        metadata = data.metadata;
-      self.documentInfo = info;
-      self.metadata = metadata;
+    pdfDocument.getMetadata().then(({ info, metadata }) => {
+      this.documentInfo = info;
+      this.metadata = metadata;
 
       // Provides some basic debug information
       console.log(
-        "PDF " +
-          pdfDocument.fingerprints[0] +
-          " [" +
-          info.PDFFormatVersion +
-          " " +
-          (info.Producer || "-").trim() +
-          " / " +
-          (info.Creator || "-").trim() +
-          "]" +
-          " (PDF.js: " +
-          (pdfjsLib.version || "-") +
-          ")"
+        `PDF ${pdfDocument.fingerprints[0]} [${info.PDFFormatVersion} ` +
+          `${(metadata?.get("pdf:producer") || info.Producer || "-").trim()} / ` +
+          `${(metadata?.get("xmp:creatortool") || info.Creator || "-").trim()}` +
+          `] (PDF.js: ${pdfjsLib.version || "?"} [${pdfjsLib.build || "?"}])`
       );
 
       let pdfTitle;
@@ -191,7 +177,7 @@ const PDFViewerApplication = {
       }
 
       if (pdfTitle) {
-        self.setTitle(pdfTitle + " - " + document.title);
+        this.setTitle(pdfTitle + " - " + document.title);
       }
     });
   },
@@ -223,8 +209,7 @@ const PDFViewerApplication = {
     console.error(`${message}\n\n${moreInfoText.join("\n")}`);
   },
 
-  progress: function pdfViewProgress(level) {
-    const percent = Math.round(level * 100);
+  progress(percent) {
     // Updating the bar if value increases.
     if (percent > this.loadingBar.percent || isNaN(percent)) {
       this.loadingBar.percent = percent;
