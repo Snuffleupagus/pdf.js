@@ -25,7 +25,7 @@ async function testCrossOriginRedirects({
   redirectIfRange,
   testRangeReader,
 }) {
-  const basicApiUrl = TestPdfsServer.resolveURL("basicapi.pdf").href;
+  const basicApiUrl = TestPdfsServer.resolveURL("basicapi.pdf");
   const basicApiFileLength = 105779;
 
   const rangeSize = 32768;
@@ -84,7 +84,7 @@ function getCrossOriginUrlWithRedirects(testserverUrl, redirectIfRange) {
   if (redirectIfRange) {
     url.searchParams.set("redirectIfRange", "1");
   }
-  return url.href;
+  return url;
 }
 
 export { testCrossOriginRedirects };
