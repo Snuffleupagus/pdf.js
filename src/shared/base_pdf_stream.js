@@ -104,6 +104,9 @@ class BasePDFStreamReader {
    */
   onProgress = null;
 
+  /** @type {Headers|null} */
+  responseHeaders = null;
+
   _contentLength = 0;
 
   _filename = null;

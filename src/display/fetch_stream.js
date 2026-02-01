@@ -99,10 +99,10 @@ class PDFFetchStreamReader extends BasePDFStreamReader {
       .then(response => {
         stream._responseOrigin = getResponseOrigin(response.url);
 
+        const responseHeaders = (this.responseHeaders = response.headers);
+
         ensureResponseStatus(response.status, url);
         this._reader = response.body.getReader();
-
-        const responseHeaders = response.headers;
 
         const { contentLength, isRangeSupported } =
           validateRangeRequestCapabilities({

@@ -206,7 +206,7 @@ class PDFNetworkStreamReader extends BasePDFStreamReader {
     stream._responseOrigin = getResponseOrigin(fullRequestXhr.responseURL);
 
     const rawResponseHeaders = fullRequestXhr.getAllResponseHeaders();
-    const responseHeaders = new Headers(
+    const responseHeaders = (this.responseHeaders = new Headers(
       rawResponseHeaders
         ? rawResponseHeaders
             .trimStart()
@@ -217,7 +217,7 @@ class PDFNetworkStreamReader extends BasePDFStreamReader {
               return [key, val.join(": ")];
             })
         : []
-    );
+    ));
 
     const { contentLength, isRangeSupported } =
       validateRangeRequestCapabilities({

@@ -590,6 +590,18 @@ class PDFDocumentLoadingTask {
   async getData() {
     return this._transport.getData();
   }
+
+  /**
+   * Get the response headers, assuming that the PDF document was loaded in
+   * such a way that they are available.
+   * @returns {Promise<Headers | null>}
+   */
+  async getResponseHeaders() {
+    if (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) {
+      return this._transport.getResponseHeaders();
+    }
+    return null;
+  }
 }
 
 /**
@@ -2396,6 +2408,22 @@ class WorkerTransport {
     this.destroyCapability = null;
 
     this.setupMessageHandler();
+
+    if (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) {
+      Object.defineProperty(this, "getResponseHeaders", {
+        value: async () => {
+          // Ensure that the `loadingTask` has settled, such that `#fullReader`
+          // may exist (also depends on `#networkStream` being defined).
+          try {
+            await this.loadingTask.promise;
+          } catch {}
+
+          const headers = this.#fullReader?.responseHeaders;
+          // Always create a copy of the (internal) response headers.
+          return headers ? new Headers(headers) : null;
+        },
+      });
+    }
 
     if (typeof PDFJSDev === "undefined" || PDFJSDev.test("TESTING")) {
       // For testing purposes.
