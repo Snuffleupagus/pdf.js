@@ -29,22 +29,6 @@ if (typeof PDFJSDev !== "undefined" && PDFJSDev.test("MOZCENTRAL")) {
   );
 }
 
-function getReadableStream(readStream) {
-  const { Readable } = process.getBuiltinModule("stream");
-
-  if (typeof Readable.toWeb === "function") {
-    // See https://nodejs.org/api/stream.html#streamreadabletowebstreamreadable-options
-    return Readable.toWeb(readStream);
-  }
-  // Fallback to support Node.js versions older than `24.0.0` and `22.17.0`.
-  const require = process
-    .getBuiltinModule("module")
-    .createRequire(import.meta.url);
-
-  const polyfill = require("node-readable-to-web-readable-stream");
-  return polyfill.makeDefaultReadableStreamFromNodeReadable(readStream);
-}
-
 class PDFNodeStream extends BasePDFStream {
   constructor(source) {
     super(source, PDFNodeStreamReader, PDFNodeStreamRangeReader);
@@ -70,11 +54,12 @@ class PDFNodeStreamReader extends BasePDFStreamReader {
     this._isRangeSupported = !disableRange;
 
     const fs = process.getBuiltinModule("fs");
+    const { Readable } = process.getBuiltinModule("stream");
     fs.promises
       .lstat(url)
       .then(stat => {
         const readStream = fs.createReadStream(url);
-        const readableStream = getReadableStream(readStream);
+        const readableStream = Readable.toWeb(readStream);
 
         this._reader = readableStream.getReader();
 
@@ -130,12 +115,13 @@ class PDFNodeStreamRangeReader extends BasePDFStreamRangeReader {
     const { url } = stream._source;
 
     const fs = process.getBuiltinModule("fs");
+    const { Readable } = process.getBuiltinModule("stream");
     try {
       const readStream = fs.createReadStream(url, {
         start: begin,
         end: end - 1,
       });
-      const readableStream = getReadableStream(readStream);
+      const readableStream = Readable.toWeb(readStream);
 
       this._reader = readableStream.getReader();
 

@@ -32,10 +32,8 @@ import Metalsmith from "metalsmith";
 import ordered from "ordered-read-streams";
 import path from "path";
 import postcss from "gulp-postcss";
-import postcssDirPseudoClass from "postcss-dir-pseudo-class";
 import postcssDiscardComments from "postcss-discard-comments";
 import postcssLightDarkFunction from "@csstools/postcss-light-dark-function";
-import postcssNesting from "postcss-nesting";
 import { preprocess } from "./external/builder/builder.mjs";
 import relative from "metalsmith-html-relative";
 import rename from "gulp-rename";
@@ -82,10 +80,10 @@ const config = JSON.parse(fs.readFileSync(CONFIG_FILE).toString());
 
 const ENV_TARGETS = [
   "last 2 versions",
-  "Chrome >= 118",
+  "Chrome >= 122",
   "Firefox ESR",
-  "Safari >= 16.4",
-  "Node >= 20",
+  "Safari >= 17.4",
+  "Node >= 22",
   "> 1%",
   "not IE > 0",
   "not dead",
@@ -1076,9 +1074,7 @@ function buildGeneric(defines, dir) {
     preprocessCSS("web/viewer.css", defines)
       .pipe(
         postcss([
-          postcssDirPseudoClass(),
           discardCommentsCSS(),
-          postcssNesting(),
           postcssLightDarkFunction({ preserve: true }),
           autoprefixer(AUTOPREFIXER_CONFIG),
         ])
@@ -1144,9 +1140,7 @@ function buildComponents(defines, dir) {
     preprocessCSS("web/pdf_viewer.css", defines)
       .pipe(
         postcss([
-          postcssDirPseudoClass(),
           discardCommentsCSS(),
-          postcssNesting(),
           postcssLightDarkFunction({ preserve: true }),
           autoprefixer(AUTOPREFIXER_CONFIG),
         ])
@@ -1478,9 +1472,7 @@ gulp.task(
         preprocessCSS("web/viewer.css", defines)
           .pipe(
             postcss([
-              postcssDirPseudoClass(),
               discardCommentsCSS(),
-              postcssNesting(),
               postcssLightDarkFunction({ preserve: true }),
               autoprefixer(AUTOPREFIXER_CONFIG),
             ])
@@ -2264,7 +2256,6 @@ function packageJson() {
     license: DIST_LICENSE,
     optionalDependencies: {
       "@napi-rs/canvas": "^0.1.90",
-      "node-readable-to-web-readable-stream": "^0.4.2",
     },
     browser: {
       canvas: false,
@@ -2278,7 +2269,7 @@ function packageJson() {
       url: `git+${DIST_GIT_URL}`,
     },
     engines: {
-      node: ">=20.19.0 || >=22.13.0 || >=24",
+      node: ">=22.17.0 || >=24 || >=26",
     },
     scripts: {},
   };

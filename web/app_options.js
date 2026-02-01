@@ -16,18 +16,6 @@
 if (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) {
   // eslint-disable-next-line no-var
   var compatParams = new Map();
-  if (
-    typeof PDFJSDev !== "undefined" &&
-    PDFJSDev.test("LIB") &&
-    !globalThis.navigator?.language
-  ) {
-    globalThis.navigator = {
-      language: "en-US",
-      maxTouchPoints: 1,
-      platform: "",
-      userAgent: "",
-    };
-  }
   const { maxTouchPoints, platform, userAgent } = navigator;
 
   const isAndroid = /Android/.test(userAgent);

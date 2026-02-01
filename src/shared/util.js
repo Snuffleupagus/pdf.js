@@ -1235,19 +1235,6 @@ function MathClamp(v, min, max) {
   return Math.min(Math.max(v, min), max);
 }
 
-// TODO: Remove this once `Math.sumPrecise` is generally available.
-if (
-  (typeof PDFJSDev === "undefined" ||
-    PDFJSDev.test("SKIP_BABEL && !MOZCENTRAL")) &&
-  typeof Math.sumPrecise !== "function"
-) {
-  // Note that this isn't a "proper" polyfill, but since we're only using it to
-  // replace `Array.prototype.reduce()` invocations it should be fine.
-  Math.sumPrecise = function (numbers) {
-    return numbers.reduce((a, b) => a + b, 0);
-  };
-}
-
 // See https://developer.mozilla.org/en-US/docs/Web/API/Response/bytes#browser_compatibility
 if (
   typeof PDFJSDev !== "undefined" &&
@@ -1256,38 +1243,6 @@ if (
 ) {
   Response.prototype.bytes = async function () {
     return new Uint8Array(await this.arrayBuffer());
-  };
-}
-
-// TODO: Remove this once Safari 17.4 is the lowest supported version.
-if (
-  typeof PDFJSDev !== "undefined" &&
-  !PDFJSDev.test("SKIP_BABEL") &&
-  typeof AbortSignal.any !== "function"
-) {
-  AbortSignal.any = function (iterable) {
-    const ac = new AbortController();
-    const { signal } = ac;
-
-    // Return immediately if any of the signals are already aborted.
-    for (const s of iterable) {
-      if (s.aborted) {
-        ac.abort(s.reason);
-        return signal;
-      }
-    }
-    // Register "abort" listeners for all signals.
-    for (const s of iterable) {
-      s.addEventListener(
-        "abort",
-        () => {
-          ac.abort(s.reason);
-        },
-        { signal } // Automatically remove the listener.
-      );
-    }
-
-    return signal;
   };
 }
 
