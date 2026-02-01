@@ -146,6 +146,13 @@ describe("api", function () {
       // Ensure that the Fetch API was used to load the PDF document.
       expect(pdfDocument.getNetworkStreamName()).toEqual("PDFFetchStream");
 
+      const responseHeaders = await loadingTask.getResponseHeaders();
+      expect(responseHeaders.get("Accept-Ranges")).toEqual("bytes");
+      expect(responseHeaders.get("Content-Length")).toEqual(
+        basicApiFileLength.toString()
+      );
+      expect(responseHeaders.has("Date")).toBeTrue();
+
       await loadingTask.destroy();
     });
 
@@ -237,6 +244,9 @@ describe("api", function () {
       // Check that the TypedArray was transferred.
       expect(typedArrayPdf.length).toEqual(0);
 
+      const responseHeaders = await loadingTask.getResponseHeaders();
+      expect(responseHeaders).toBeNull();
+
       await loadingTask.destroy();
     });
 
@@ -303,6 +313,13 @@ describe("api", function () {
         expect(reason instanceof ResponseException).toEqual(true);
         expect(reason.status).toEqual(isNodeJS ? 0 : 404);
         expect(reason.missing).toEqual(true);
+      }
+
+      const responseHeaders = await loadingTask.getResponseHeaders();
+      if (isNodeJS) {
+        expect(responseHeaders).toBeNull();
+      } else {
+        expect(responseHeaders.has("Date")).toBeTrue();
       }
 
       await loadingTask.destroy();

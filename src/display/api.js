@@ -623,6 +623,15 @@ class PDFDocumentLoadingTask {
   async getData() {
     return this._transport.getData();
   }
+
+  /**
+   * Get the response headers, assuming that the PDF document was loaded in
+   * such a way that they are available.
+   * @returns {Promise<Headers | null>}
+   */
+  async getResponseHeaders() {
+    return this._transport.getResponseHeaders();
+  }
 }
 
 /**
@@ -2921,6 +2930,17 @@ class WorkerTransport {
 
   getData() {
     return this.messageHandler.sendWithPromise("GetData", null);
+  }
+
+  async getResponseHeaders() {
+    if (typeof PDFJSDev !== "undefined" && !PDFJSDev.test("GENERIC")) {
+      throw new Error("Not implemented: getResponseHeaders");
+    }
+    try {
+      await this.loadingTask.promise;
+    } catch {}
+
+    return this.#networkStream ? this.#fullReader.responseHeaders : null;
   }
 
   saveDocument() {

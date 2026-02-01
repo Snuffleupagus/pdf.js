@@ -116,6 +116,8 @@ class BasePDFStreamReader {
 
   _loaded = 0;
 
+  _responseHeaders = null;
+
   _stream = null;
 
   constructor(stream) {
@@ -135,6 +137,13 @@ class BasePDFStreamReader {
    */
   get headersReady() {
     return this._headersCapability.promise;
+  }
+
+  /**
+   * @type {Headers|null}
+   */
+  get responseHeaders() {
+    return this._responseHeaders;
   }
 
   /**

@@ -216,6 +216,8 @@ class PDFNetworkStreamReader extends BasePDFStreamReader {
             })
         : []
     );
+    // Always create a copy of the (internal) response headers.
+    this._responseHeaders = new Headers(responseHeaders);
 
     const { allowRangeRequests, suggestedLength } =
       validateRangeRequestCapabilities({
