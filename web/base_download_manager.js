@@ -64,11 +64,10 @@ class BaseDownloadManager {
     const contentType = isPdfData ? "application/pdf" : "";
 
     if (isPdfData) {
-      let blobUrl;
+      const blobUrl = this.#openBlobUrls.getOrInsertComputed(data, () =>
+        URL.createObjectURL(new Blob([data], { type: contentType }))
+      );
       try {
-        blobUrl = this.#openBlobUrls.getOrInsertComputed(data, () =>
-          URL.createObjectURL(new Blob([data], { type: contentType }))
-        );
         const viewerUrl = this._getOpenDataUrl(blobUrl, filename, dest);
 
         window.open(viewerUrl);

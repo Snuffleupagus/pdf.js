@@ -21,7 +21,7 @@ const INITIAL_DATA = Symbol("INITIAL_DATA");
  * a worker. This class implements some basic methods to manage these objects.
  */
 class PDFObjects {
-  #objs = Object.create(null);
+  #objs = new Map();
 
   /**
    * Ensures there is an object defined for `objId`.
@@ -30,10 +30,10 @@ class PDFObjects {
    * @returns {Object}
    */
   #ensureObj(objId) {
-    return (this.#objs[objId] ||= {
+    return this.#objs.getOrInsertComputed(objId, () => ({
       ...Promise.withResolvers(),
       data: INITIAL_DATA,
-    });
+    }));
   }
 
   /**
@@ -58,7 +58,7 @@ class PDFObjects {
     }
     // If there isn't a callback, the user expects to get the resolved data
     // directly.
-    const obj = this.#objs[objId];
+    const obj = this.#objs.get(objId);
     // If there isn't an object yet or the object isn't resolved, then the
     // data isn't ready yet!
     if (!obj || obj.data === INITIAL_DATA) {
@@ -72,7 +72,7 @@ class PDFObjects {
    * @returns {boolean}
    */
   has(objId) {
-    const obj = this.#objs[objId];
+    const obj = this.#objs.get(objId);
     return !!obj && obj.data !== INITIAL_DATA;
   }
 
@@ -81,12 +81,12 @@ class PDFObjects {
    * @returns {boolean}
    */
   delete(objId) {
-    const obj = this.#objs[objId];
+    const obj = this.#objs.get(objId);
     if (!obj || obj.data === INITIAL_DATA) {
       // Only allow removing the object *after* it's been resolved.
       return false;
     }
-    delete this.#objs[objId];
+    this.#objs.delete(objId);
     return true;
   }
 
@@ -103,21 +103,17 @@ class PDFObjects {
   }
 
   clear() {
-    for (const objId in this.#objs) {
-      const { data } = this.#objs[objId];
+    for (const { data } of this.#objs.values()) {
       data?.bitmap?.close(); // Release any `ImageBitmap` data.
     }
-    this.#objs = Object.create(null);
+    this.#objs.clear();
   }
 
   *[Symbol.iterator]() {
-    for (const objId in this.#objs) {
-      const { data } = this.#objs[objId];
-
-      if (data === INITIAL_DATA) {
-        continue;
+    for (const [objId, { data }] of this.#objs) {
+      if (data !== INITIAL_DATA) {
+        yield [objId, data];
       }
-      yield [objId, data];
     }
   }
 }
