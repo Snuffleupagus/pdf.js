@@ -227,6 +227,12 @@ class TimeSlotManager {
 }
 
 class PartialEvaluator {
+  _fetchBuiltInCMapBound = this.fetchBuiltInCMap.bind(this);
+
+  _regionalImageCache = new RegionalImageCache();
+
+  type3FontRefs = null;
+
   constructor({
     xref,
     handler,
@@ -251,10 +257,6 @@ class PartialEvaluator {
     this.globalImageCache = globalImageCache;
     this.systemFontCache = systemFontCache;
     this.options = options || DefaultPartialEvaluatorOptions;
-    this.type3FontRefs = null;
-
-    this._regionalImageCache = new RegionalImageCache();
-    this._fetchBuiltInCMapBound = this.fetchBuiltInCMap.bind(this);
   }
 
   /**
@@ -5023,9 +5025,10 @@ class TranslatedFont {
 }
 
 class StateManager {
+  stateStack = [];
+
   constructor(initialState = new EvalState()) {
     this.state = initialState;
-    this.stateStack = [];
   }
 
   save() {
@@ -5306,6 +5309,12 @@ class EvaluatorPreprocessor {
 
   static MAX_INVALID_PATH_OPS = 10;
 
+  _isPathOp = false;
+
+  _numInvalidPathOPS = 0;
+
+  nonProcessedArgs = [];
+
   constructor(stream, xref, stateManager = new StateManager()) {
     // TODO(mduan): pass array of knownCommands rather than this.opMap
     // dictionary
@@ -5314,9 +5323,6 @@ class EvaluatorPreprocessor {
       xref,
     });
     this.stateManager = stateManager;
-    this.nonProcessedArgs = [];
-    this._isPathOp = false;
-    this._numInvalidPathOPS = 0;
   }
 
   get savedStatesDepth() {

@@ -17,6 +17,8 @@ import { DecodeStream } from "./decode_stream.js";
 import { isWhiteSpace } from "./core_utils.js";
 
 class Ascii85Stream extends DecodeStream {
+  input = new Uint8Array(5);
+
   constructor(str, maybeLength) {
     // Most streams increase in size when decoded, but Ascii85 streams
     // typically shrink by ~20%.
@@ -27,7 +29,6 @@ class Ascii85Stream extends DecodeStream {
 
     this.stream = str;
     this.dict = str.dict;
-    this.input = new Uint8Array(5);
   }
 
   readBlock() {

@@ -33,43 +33,68 @@ const MAX_LEAVES_PER_PAGES_NODE = 16;
 const MAX_IN_NAME_TREE_NODE = 64;
 
 class PageData {
+  annotations = null;
+
+  // Named destinations which points to this page.
+  pointingNamedDestinations = null;
+
   constructor(page, documentData) {
     this.page = page;
     this.documentData = documentData;
-    this.annotations = null;
-    // Named destinations which points to this page.
-    this.pointingNamedDestinations = null;
 
     documentData.pagesMap.put(page.ref, this);
   }
 }
 
 class DocumentData {
+  acroForm = null;
+
+  acroFormDefaultAppearance = "";
+
+  acroFormDefaultResources = null;
+
+  acroFormQ = 0;
+
+  classMap = null;
+
+  dedupNamedDestinations = new Map();
+
+  destinations = null;
+
+  fieldToParent = new RefSetCache();
+
+  hasSignatureAnnotations = false;
+
+  idTree = null;
+
+  namespaces = null;
+
+  oldRefMapping = new RefSetCache();
+
+  oldStructParentMapping = new Map();
+
+  pageLabels = null;
+
+  pagesMap = new RefSetCache();
+
+  parentTree = null;
+
+  postponedRefCopies = new RefSetCache();
+
+  roleMap = null;
+
+  structTreeAF = null;
+
+  structTreePronunciationLexicon = [];
+
+  structTreeRoot = null;
+
+  usedNamedDestinations = new Set();
+
+  usedStructParents = new Set();
+
   constructor(document) {
     this.document = document;
-    this.destinations = null;
-    this.pageLabels = null;
-    this.pagesMap = new RefSetCache();
-    this.oldRefMapping = new RefSetCache();
-    this.dedupNamedDestinations = new Map();
-    this.usedNamedDestinations = new Set();
-    this.postponedRefCopies = new RefSetCache();
-    this.usedStructParents = new Set();
-    this.oldStructParentMapping = new Map();
-    this.structTreeRoot = null;
-    this.parentTree = null;
-    this.idTree = null;
-    this.roleMap = null;
-    this.classMap = null;
-    this.namespaces = null;
-    this.structTreeAF = null;
-    this.structTreePronunciationLexicon = [];
-    this.acroForm = null;
-    this.acroFormDefaultAppearance = "";
-    this.acroFormDefaultResources = null;
-    this.acroFormQ = 0;
-    this.hasSignatureAnnotations = false;
-    this.fieldToParent = new RefSetCache();
   }
 }
 

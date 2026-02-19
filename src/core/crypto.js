@@ -192,6 +192,10 @@ class AESBaseCipher {
     i < 128 ? i << 1 : (i << 1) ^ 0x1b
   );
 
+  buffer = new Uint8Array(16);
+
+  bufferPosition = 0;
+
   constructor() {
     if (
       (typeof PDFJSDev === "undefined" || PDFJSDev.test("TESTING")) &&
@@ -199,8 +203,6 @@ class AESBaseCipher {
     ) {
       unreachable("Cannot initialize AESBaseCipher.");
     }
-    this.buffer = new Uint8Array(16);
-    this.bufferPosition = 0;
   }
 
   _expandKey(cipherKey) {
@@ -531,12 +533,12 @@ class AES128Cipher extends AESBaseCipher {
     0x74, 0xe8, 0xcb, 0x8d,
   ]);
 
+  _cyclesOfRepetition = 10;
+
+  _keySize = 160; // bits
+
   constructor(key) {
     super();
-
-    this._cyclesOfRepetition = 10;
-    this._keySize = 160; // bits
-
     this._key = this._expandKey(key);
   }
 
@@ -577,12 +579,12 @@ class AES128Cipher extends AESBaseCipher {
 }
 
 class AES256Cipher extends AESBaseCipher {
+  _cyclesOfRepetition = 14;
+
+  _keySize = 224; // bits
+
   constructor(key) {
     super();
-
-    this._cyclesOfRepetition = 14;
-    this._keySize = 224; // bits
-
     this._key = this._expandKey(key);
   }
 

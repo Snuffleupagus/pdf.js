@@ -48,8 +48,9 @@ const WE_HAVE_INSTRUCTIONS = 1 << 8;
  * https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6glyf.html
  */
 class GlyfTable {
+  glyphs = [];
+
   constructor({ glyfTable, isGlyphLocationsLong, locaTable, numGlyphs }) {
-    this.glyphs = [];
     const loca = new DataView(
       locaTable.buffer,
       locaTable.byteOffset,

@@ -33,16 +33,23 @@ import { BaseStream } from "./base_stream.js";
 import { CipherTransformFactory } from "./crypto.js";
 
 class XRef {
+  _cacheMap = new Map(); // Prepare the XRef cache.
+
+  _newPersistentRefNum = null;
+
+  _newTemporaryRefNum = null;
+
+  _pendingRefs = new RefSet();
+
+  _persistentRefsCache = null;
+
+  _xrefStms = new Set();
+
+  entries = [];
+
   constructor(stream, pdfManager) {
     this.stream = stream;
     this.pdfManager = pdfManager;
-    this.entries = [];
-    this._xrefStms = new Set();
-    this._cacheMap = new Map(); // Prepare the XRef cache.
-    this._pendingRefs = new RefSet();
-    this._newPersistentRefNum = null;
-    this._newTemporaryRefNum = null;
-    this._persistentRefsCache = null;
   }
 
   getNewPersistentRef(obj) {

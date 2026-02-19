@@ -18,11 +18,14 @@ import { EOF } from "./primitives.js";
 import { isWhiteSpace } from "./core_utils.js";
 
 class PostScriptParser {
+  operators = [];
+
+  prev = null;
+
+  token = null;
+
   constructor(lexer) {
     this.lexer = lexer;
-    this.operators = [];
-    this.token = null;
-    this.prev = null;
   }
 
   nextToken() {
@@ -160,11 +163,11 @@ class PostScriptToken {
 }
 
 class PostScriptLexer {
+  strBuf = [];
+
   constructor(stream) {
     this.stream = stream;
     this.nextChar();
-
-    this.strBuf = [];
   }
 
   nextChar() {

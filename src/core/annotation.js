@@ -659,6 +659,12 @@ function getTransformMatrix(rect, bbox, matrix) {
 }
 
 class Annotation {
+  _fallbackFontDict = null;
+
+  _needAppearances = false;
+
+  _streams = [];
+
   constructor(params) {
     const { annotationGlobals, dict, orphanFields, ref, subtype, xref } =
       params;
@@ -682,7 +688,6 @@ class Annotation {
     this.setRotation(MK, dict);
     this.ref = params.ref instanceof Ref ? params.ref : null;
 
-    this._streams = [];
     if (this.appearance) {
       this._streams.push(this.appearance);
     }
@@ -755,8 +760,6 @@ class Annotation {
 
     this._isOffscreenCanvasSupported =
       params.evaluatorOptions.isOffscreenCanvasSupported;
-    this._fallbackFontDict = null;
-    this._needAppearances = false;
   }
 
   /**
@@ -2770,6 +2773,8 @@ class WidgetAnnotation extends Annotation {
 }
 
 class TextWidgetAnnotation extends WidgetAnnotation {
+  _hasText = true;
+
   constructor(params) {
     super(params);
 
@@ -2784,7 +2789,6 @@ class TextWidgetAnnotation extends WidgetAnnotation {
     }
 
     this.data.hasOwnCanvas = this.data.readOnly && !this.data.noHTML;
-    this._hasText = true;
 
     // The field value is always a string.
     if (typeof this.data.fieldValue !== "string") {
@@ -3089,11 +3093,12 @@ class TextWidgetAnnotation extends WidgetAnnotation {
 }
 
 class ButtonWidgetAnnotation extends WidgetAnnotation {
+  checkedAppearance = null;
+
+  uncheckedAppearance = null;
+
   constructor(params) {
     super(params);
-
-    this.checkedAppearance = null;
-    this.uncheckedAppearance = null;
 
     const isRadio = this.hasFieldFlag(AnnotationFieldFlag.RADIO),
       isPushButton = this.hasFieldFlag(AnnotationFieldFlag.PUSHBUTTON);
@@ -3554,6 +3559,8 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
 }
 
 class ChoiceWidgetAnnotation extends WidgetAnnotation {
+  _hasText = true;
+
   constructor(params) {
     super(params);
 
@@ -3629,7 +3636,6 @@ class ChoiceWidgetAnnotation extends WidgetAnnotation {
     // Process field flags for the display layer.
     this.data.combo = this.hasFieldFlag(AnnotationFieldFlag.COMBO);
     this.data.multiSelect = this.hasFieldFlag(AnnotationFieldFlag.MULTISELECT);
-    this._hasText = true;
   }
 
   getFieldObject() {

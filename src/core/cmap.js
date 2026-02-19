@@ -200,20 +200,26 @@ const MAX_MAP_RANGE = 2 ** 24 - 1; // = 0xFFFFFF
 
 // CMap, not to be confused with TrueType's cmap.
 class CMap {
+  // Codespace ranges are stored as follows:
+  // [[1BytePairs], [2BytePairs], [3BytePairs], [4BytePairs]]
+  // where nBytePairs are ranges e.g. [low1, high1, low2, high2, ...]
+  codespaceRanges = [[], [], [], []];
+
+  numCodespaceRanges = 0;
+
+  // Map entries have one of two forms.
+  // - cid chars are 16-bit unsigned integers, stored as integers.
+  // - bf chars are variable-length byte sequences, stored as strings, with
+  //   one byte per character.
+  _map = [];
+
+  name = "";
+
+  vertical = false;
+
+  useCMap = null;
+
   constructor(builtInCMap = false) {
-    // Codespace ranges are stored as follows:
-    // [[1BytePairs], [2BytePairs], [3BytePairs], [4BytePairs]]
-    // where nBytePairs are ranges e.g. [low1, high1, low2, high2, ...]
-    this.codespaceRanges = [[], [], [], []];
-    this.numCodespaceRanges = 0;
-    // Map entries have one of two forms.
-    // - cid chars are 16-bit unsigned integers, stored as integers.
-    // - bf chars are variable-length byte sequences, stored as strings, with
-    //   one byte per character.
-    this._map = [];
-    this.name = "";
-    this.vertical = false;
-    this.useCMap = null;
     this.builtInCMap = builtInCMap;
   }
 

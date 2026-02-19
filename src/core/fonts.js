@@ -973,16 +973,22 @@ class Font {
 
   #glyphCache = new Map();
 
+  mimetype = null;
+
+  missingFile = false;
+
+  psName = null;
+
+  toFontChar = [];
+
   constructor(name, file, properties, evaluatorOptions) {
     this.name = name;
-    this.psName = null;
-    this.mimetype = null;
     this.disableFontFace = evaluatorOptions.disableFontFace;
     this.fontExtraProperties = evaluatorOptions.fontExtraProperties;
 
     this.loadedName = properties.loadedName;
     this.isType3Font = properties.isType3Font;
-    this.missingFile = false;
+
     this.cssFontInfo = properties.cssFontInfo;
 
     let isSerifFont = !!(properties.flags & FontFlags.Serif);
@@ -1044,7 +1050,6 @@ class Font {
     this.defaultEncoding = properties.defaultEncoding;
 
     this.toUnicode = properties.toUnicode;
-    this.toFontChar = [];
 
     if (properties.type === "Type3") {
       for (let charCode = 0; charCode < 256; charCode++) {
@@ -3615,10 +3620,12 @@ class Font {
 }
 
 class ErrorFont {
+  missingFile = true;
+
+  loadedName = "g_font_error";
+
   constructor(error) {
     this.error = error;
-    this.loadedName = "g_font_error";
-    this.missingFile = true;
   }
 
   charsToGlyphs() {

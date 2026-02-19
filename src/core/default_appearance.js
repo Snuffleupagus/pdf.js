@@ -246,11 +246,14 @@ function createDefaultAppearance({ fontSize, fontName, fontColor }) {
 }
 
 class FakeUnicodeFont {
+  firstChar = Infinity;
+
+  lastChar = -Infinity;
+
+  widths = null;
+
   constructor(xref, fontFamily) {
     this.xref = xref;
-    this.widths = null;
-    this.firstChar = Infinity;
-    this.lastChar = -Infinity;
     this.fontFamily = fontFamily;
 
     const canvas = new OffscreenCanvas(1, 1);

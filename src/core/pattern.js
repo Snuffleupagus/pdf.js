@@ -46,7 +46,12 @@ const ShadingType = {
 
 class Pattern {
   constructor() {
-    unreachable("Cannot initialize Pattern.");
+    if (
+      (typeof PDFJSDev === "undefined" || PDFJSDev.test("TESTING")) &&
+      this.constructor === Pattern
+    ) {
+      unreachable("Cannot initialize Pattern.");
+    }
   }
 
   static parseShading(
@@ -313,11 +318,13 @@ class RadialAxialShading extends BaseShading {
 // All mesh shadings. For now, they will be presented as set of the triangles
 // to be drawn on the canvas and rgb color for each vertex.
 class MeshStreamReader {
+  buffer = 0;
+
+  bufferLength = 0;
+
   constructor(stream, context) {
     this.stream = stream;
     this.context = context;
-    this.buffer = 0;
-    this.bufferLength = 0;
 
     const numComps = context.numComps;
     this.tmpCompsBuf = new Float32Array(numComps);
@@ -447,6 +454,12 @@ class MeshShading extends BaseShading {
   // Count of triangles per entire mesh bounds.
   static TRIANGLE_DENSITY = 20;
 
+  coords = [];
+
+  colors = [];
+
+  figures = [];
+
   constructor(
     stream,
     xref,
@@ -478,10 +491,6 @@ class MeshShading extends BaseShading {
     const fn = fnObj
       ? pdfFunctionFactory.create(fnObj, /* parseArray = */ true)
       : null;
-
-    this.coords = [];
-    this.colors = [];
-    this.figures = [];
 
     const decodeContext = {
       bitsPerCoordinate: dict.get("BitsPerCoordinate"),

@@ -16,13 +16,15 @@
 import { DecodeStream } from "./decode_stream.js";
 
 class LZWStream extends DecodeStream {
+  cachedData = 0;
+
+  bitsCached = 0;
+
   constructor(str, maybeLength, earlyChange) {
     super(maybeLength);
 
     this.stream = str;
     this.dict = str.dict;
-    this.cachedData = 0;
-    this.bitsCached = 0;
 
     const maxLzwDictionarySize = 4096;
     const lzwState = {

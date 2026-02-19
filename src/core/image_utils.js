@@ -17,6 +17,8 @@ import { assert, unreachable, warn } from "../shared/util.js";
 import { RefSet, RefSetCache } from "./primitives.js";
 
 class BaseLocalCache {
+  _imageCache = new RefSetCache();
+
   constructor(options) {
     if (
       (typeof PDFJSDev === "undefined" || PDFJSDev.test("TESTING")) &&
@@ -30,7 +32,6 @@ class BaseLocalCache {
       this._nameRefMap = new Map();
       this._imageMap = new Map();
     }
-    this._imageCache = new RefSetCache();
   }
 
   getByName(name) {
@@ -198,6 +199,10 @@ class GlobalImageCache {
 
   #decodeFailedSet = new RefSet();
 
+  _refCache = new RefSetCache();
+
+  _imageCache = new RefSetCache();
+
   constructor() {
     if (typeof PDFJSDev === "undefined" || PDFJSDev.test("TESTING")) {
       assert(
@@ -205,8 +210,6 @@ class GlobalImageCache {
         "GlobalImageCache - invalid NUM_PAGES_THRESHOLD constant."
       );
     }
-    this._refCache = new RefSetCache();
-    this._imageCache = new RefSetCache();
   }
 
   get #byteSize() {
