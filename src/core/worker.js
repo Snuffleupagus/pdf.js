@@ -41,10 +41,12 @@ import { PDFWorkerStream } from "./worker_stream.js";
 import { StructTreeRoot } from "./struct_tree.js";
 
 class WorkerTask {
+  terminated = false;
+
+  _capability = Promise.withResolvers();
+
   constructor(name) {
     this.name = name;
-    this.terminated = false;
-    this._capability = Promise.withResolvers();
   }
 
   get finished() {

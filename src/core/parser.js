@@ -60,14 +60,16 @@ function getInlineImageCacheKey(bytes) {
 }
 
 class Parser {
+  imageCache = Object.create(null);
+
+  _imageId = 0;
+
   constructor({ lexer, xref, allowStreams = false, recoveryMode = false }) {
     this.lexer = lexer;
     this.xref = xref;
     this.allowStreams = allowStreams;
     this.recoveryMode = recoveryMode;
 
-    this.imageCache = Object.create(null);
-    this._imageId = 0;
     this.refill();
   }
 
@@ -874,16 +876,20 @@ function toHexDigit(ch) {
 }
 
 class Lexer {
+  // While lexing, we build up many strings one char at a time. Using += for
+  // this can result in lots of garbage strings. It's better to build an
+  // array of single-char strings and then join() them together at the end.
+  // And reusing a single array (i.e. |this.strBuf|) over and over for this
+  // purpose uses less memory than using a new array for each string.
+  strBuf = [];
+
+  _hexStringNumWarn = 0;
+
+  beginInlineImagePos = -1;
+
   constructor(stream, knownCommands = null) {
     this.stream = stream;
     this.nextChar();
-
-    // While lexing, we build up many strings one char at a time. Using += for
-    // this can result in lots of garbage strings. It's better to build an
-    // array of single-char strings and then join() them together at the end.
-    // And reusing a single array (i.e. |this.strBuf|) over and over for this
-    // purpose uses less memory than using a new array for each string.
-    this.strBuf = [];
 
     // The PDFs might have "glued" commands with other commands, operands or
     // literals, e.g. "q1". The knownCommands is a dictionary of the valid
@@ -893,9 +899,6 @@ class Lexer {
     // 'fa', 'fal', 'fals'. The prefixes are not needed, if the command has no
     // other commands or literals as a prefix. The knowCommands is optional.
     this.knownCommands = knownCommands;
-
-    this._hexStringNumWarn = 0;
-    this.beginInlineImagePos = -1;
   }
 
   nextChar() {

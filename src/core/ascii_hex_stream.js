@@ -16,6 +16,8 @@
 import { DecodeStream } from "./decode_stream.js";
 
 class AsciiHexStream extends DecodeStream {
+  firstDigit = -1;
+
   constructor(str, maybeLength) {
     // Most streams increase in size when decoded, but AsciiHex streams shrink
     // by 50%.
@@ -26,8 +28,6 @@ class AsciiHexStream extends DecodeStream {
 
     this.stream = str;
     this.dict = str.dict;
-
-    this.firstDigit = -1;
   }
 
   readBlock() {

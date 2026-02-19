@@ -57,11 +57,13 @@ const MAX_NUM_SIZE = 16;
 const MAX_ENCODED_NUM_SIZE = 19; // ceil(MAX_NUM_SIZE * 7 / 8)
 
 class BinaryCMapStream {
+  pos = 0;
+
+  tmpBuf = new Uint8Array(MAX_ENCODED_NUM_SIZE);
+
   constructor(data) {
     this.buffer = data;
-    this.pos = 0;
     this.end = data.length;
-    this.tmpBuf = new Uint8Array(MAX_ENCODED_NUM_SIZE);
   }
 
   readByte() {

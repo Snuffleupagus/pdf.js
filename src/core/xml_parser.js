@@ -435,11 +435,14 @@ class SimpleDOMNode {
 }
 
 class SimpleXMLParser extends XMLParserBase {
+  _currentFragment = null;
+
+  _stack = null;
+
+  _errorCode = XMLParserErrorCode.NoError;
+
   constructor({ hasAttributes = false, lowerCaseName = false }) {
     super();
-    this._currentFragment = null;
-    this._stack = null;
-    this._errorCode = XMLParserErrorCode.NoError;
     this._hasAttributes = hasAttributes;
     this._lowerCaseName = lowerCaseName;
   }

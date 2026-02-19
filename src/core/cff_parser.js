@@ -1109,6 +1109,8 @@ class CFFIndex {
 }
 
 class CFFDict {
+  values = Object.create(null);
+
   constructor(tables, strings) {
     this.keyToNameMap = tables.keyToNameMap;
     this.nameToKeyMap = tables.nameToKeyMap;
@@ -1117,7 +1119,6 @@ class CFFDict {
     this.opcodes = tables.opcodes;
     this.order = tables.order;
     this.strings = strings;
-    this.values = Object.create(null);
   }
 
   // value should always be an array
@@ -1241,9 +1242,10 @@ class CFFTopDict extends CFFDict {
     return shadow(this, "tables", this.createTables(CFFTopDictLayout));
   }
 
+  privateDict = null;
+
   constructor(strings) {
     super(CFFTopDict.tables, strings);
-    this.privateDict = null;
   }
 }
 
@@ -1273,9 +1275,10 @@ class CFFPrivateDict extends CFFDict {
     return shadow(this, "tables", this.createTables(CFFPrivateDictLayout));
   }
 
+  subrsIndex = null;
+
   constructor(strings) {
     super(CFFPrivateDict.tables, strings);
-    this.subrsIndex = null;
   }
 }
 

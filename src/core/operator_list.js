@@ -562,17 +562,20 @@ class NullOptimizer {
 }
 
 class QueueOptimizer extends NullOptimizer {
+  state = null;
+
+  match = null;
+
+  lastProcessed = 0;
+
   constructor(queue) {
     super(queue);
-    this.state = null;
     this.context = {
       iCurr: 0,
       fnArray: queue.fnArray,
       argsArray: queue.argsArray,
       isOffscreenCanvasSupported: OperatorList.isOffscreenCanvasSupported,
     };
-    this.match = null;
-    this.lastProcessed = 0;
   }
 
   _optimize() {
@@ -655,17 +658,22 @@ class OperatorList {
 
   static isOffscreenCanvasSupported = false;
 
+  fnArray = [];
+
+  argsArray = [];
+
+  dependencies = new Set();
+
+  _totalLength = 0;
+
+  weight = 0;
+
   constructor(intent = 0, streamSink) {
     this._streamSink = streamSink;
-    this.fnArray = [];
-    this.argsArray = [];
     this.optimizer =
       streamSink && !(intent & RenderingIntentFlag.OPLIST)
         ? new QueueOptimizer(this)
         : new NullOptimizer(this);
-    this.dependencies = new Set();
-    this._totalLength = 0;
-    this.weight = 0;
     this._resolved = streamSink ? null : Promise.resolve();
   }
 

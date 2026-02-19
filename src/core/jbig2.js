@@ -1843,8 +1843,9 @@ class HuffmanLine {
 }
 
 class HuffmanTreeNode {
+  children = [];
+
   constructor(line) {
-    this.children = [];
     if (line) {
       // Leaf node
       this.isLeaf = true;
@@ -2253,13 +2254,15 @@ function getStandardTable(number) {
 }
 
 class Reader {
+  shift = -1;
+
+  currentByte = 0;
+
   constructor(data, start, end) {
     this.data = data;
     this.start = start;
     this.end = end;
     this.position = start;
-    this.shift = -1;
-    this.currentByte = 0;
   }
 
   readBit() {

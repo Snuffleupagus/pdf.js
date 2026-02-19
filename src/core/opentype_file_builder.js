@@ -47,9 +47,10 @@ const OTF_HEADER_SIZE = 12;
 const OTF_TABLE_ENTRY_SIZE = 16;
 
 class OpenTypeFileBuilder {
+  tables = Object.create(null);
+
   constructor(sfnt) {
     this.sfnt = sfnt;
-    this.tables = Object.create(null);
   }
 
   static getSearchParams(entriesCount, entrySize) {

@@ -29,37 +29,56 @@ const MAX_LEAVES_PER_PAGES_NODE = 16;
 const MAX_IN_NAME_TREE_NODE = 64;
 
 class PageData {
+  annotations = null;
+
+  // Named destinations which points to this page.
+  pointingNamedDestinations = null;
+
   constructor(page, documentData) {
     this.page = page;
     this.documentData = documentData;
-    this.annotations = null;
-    // Named destinations which points to this page.
-    this.pointingNamedDestinations = null;
 
     documentData.pagesMap.put(page.ref, this);
   }
 }
 
 class DocumentData {
+  destinations = null;
+
+  pageLabels = null;
+
+  pagesMap = new RefSetCache();
+
+  oldRefMapping = new RefSetCache();
+
+  dedupNamedDestinations = new Map();
+
+  usedNamedDestinations = new Set();
+
+  postponedRefCopies = new RefSetCache();
+
+  usedStructParents = new Set();
+
+  oldStructParentMapping = new Map();
+
+  structTreeRoot = null;
+
+  parentTree = null;
+
+  idTree = null;
+
+  roleMap = null;
+
+  classMap = null;
+
+  namespaces = null;
+
+  structTreeAF = null;
+
+  structTreePronunciationLexicon = [];
+
   constructor(document) {
     this.document = document;
-    this.destinations = null;
-    this.pageLabels = null;
-    this.pagesMap = new RefSetCache();
-    this.oldRefMapping = new RefSetCache();
-    this.dedupNamedDestinations = new Map();
-    this.usedNamedDestinations = new Set();
-    this.postponedRefCopies = new RefSetCache();
-    this.usedStructParents = new Set();
-    this.oldStructParentMapping = new Map();
-    this.structTreeRoot = null;
-    this.parentTree = null;
-    this.idTree = null;
-    this.roleMap = null;
-    this.classMap = null;
-    this.namespaces = null;
-    this.structTreeAF = null;
-    this.structTreePronunciationLexicon = [];
   }
 }
 

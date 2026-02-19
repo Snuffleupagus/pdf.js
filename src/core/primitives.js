@@ -67,13 +67,17 @@ const nonSerializable = function nonSerializableClosure() {
 };
 
 class Dict {
+  // Map should only be used internally, use functions below to access.
+  _map = new Map();
+
+  objId = null;
+
+  suppressEncryption = false;
+
+  __nonSerializable__ = nonSerializable; // Disable cloning of the Dict.
+
   constructor(xref = null) {
-    // Map should only be used internally, use functions below to access.
-    this._map = new Map();
     this.xref = xref;
-    this.objId = null;
-    this.suppressEncryption = false;
-    this.__nonSerializable__ = nonSerializable; // Disable cloning of the Dict.
   }
 
   assignXref(newXref) {

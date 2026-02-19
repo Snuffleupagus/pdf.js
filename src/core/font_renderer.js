@@ -784,6 +784,10 @@ class Commands {
 }
 
 class CompiledFont {
+  compiledGlyphs = Object.create(null);
+
+  compiledCharCodeToGlyphId = Object.create(null);
+
   constructor(fontMatrix) {
     if (
       (typeof PDFJSDev === "undefined" || PDFJSDev.test("TESTING")) &&
@@ -792,9 +796,6 @@ class CompiledFont {
       unreachable("Cannot initialize CompiledFont.");
     }
     this.fontMatrix = fontMatrix;
-
-    this.compiledGlyphs = Object.create(null);
-    this.compiledCharCodeToGlyphId = Object.create(null);
   }
 
   getPathJs(unicode) {
@@ -873,6 +874,8 @@ class TrueTypeCompiled extends CompiledFont {
 }
 
 class Type2Compiled extends CompiledFont {
+  glyphNameMap = getGlyphsUnicode();
+
   constructor(cffInfo, cmap, fontMatrix) {
     super(fontMatrix || [0.001, 0, 0, 0.001, 0, 0]);
 
@@ -880,7 +883,6 @@ class Type2Compiled extends CompiledFont {
     this.gsubrs = cffInfo.gsubrs || [];
     this.subrs = cffInfo.subrs || [];
     this.cmap = cmap;
-    this.glyphNameMap = getGlyphsUnicode();
 
     this.gsubrsBias = getSubroutineBias(this.gsubrs);
     this.subrsBias = getSubroutineBias(this.subrs);

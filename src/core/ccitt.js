@@ -465,6 +465,8 @@ const blackTable3 = [
  * @param {Object} [options] - Decoding options.
  */
 class CCITTFaxDecoder {
+  eof = false;
+
   constructor(
     source,
     options = {
@@ -481,7 +483,6 @@ class CCITTFaxDecoder {
       throw new Error('CCITTFaxDecoder - invalid "source" parameter.');
     }
     this.source = source;
-    this.eof = false;
 
     ({
       K: this.encoding,

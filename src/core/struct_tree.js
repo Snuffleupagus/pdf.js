@@ -36,14 +36,18 @@ const StructElementType = {
 };
 
 class StructTreeRoot {
+  roleMap = new Map();
+
+  structParentIds = null;
+
+  kidRefToPosition = undefined;
+
+  parentTree = null;
+
   constructor(xref, rootDict, rootRef) {
     this.xref = xref;
     this.dict = rootDict;
     this.ref = rootRef instanceof Ref ? rootRef : null;
-    this.roleMap = new Map();
-    this.structParentIds = null;
-    this.kidRefToPosition = undefined;
-    this.parentTree = null;
   }
 
   getKidPosition(kidRef) {
@@ -572,11 +576,13 @@ class StructTreeRoot {
  * elements, which means we need a wrapper structure to represent the tree.
  */
 class StructElementNode {
+  kids = [];
+
   constructor(tree, dict) {
     this.tree = tree;
     this.xref = tree.xref;
     this.dict = dict;
-    this.kids = [];
+
     this.parseKids();
   }
 
@@ -711,6 +717,8 @@ class StructElementNode {
 }
 
 class StructElement {
+  parentNode = null;
+
   constructor({
     type,
     dict = null,
@@ -723,17 +731,17 @@ class StructElement {
     this.mcid = mcid;
     this.pageObjId = pageObjId;
     this.refObjId = refObjId;
-    this.parentNode = null;
   }
 }
 
 class StructTreePage {
+  nodes = [];
+
   constructor(structTreeRoot, pageDict) {
     this.root = structTreeRoot;
     this.xref = structTreeRoot?.xref ?? null;
     this.rootDict = structTreeRoot?.dict ?? null;
     this.pageDict = pageDict;
-    this.nodes = [];
   }
 
   /**

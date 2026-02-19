@@ -16,16 +16,15 @@
 import { SimpleXMLParser } from "./xml_parser.js";
 
 class MetadataParser {
+  _metadataMap = new Map();
+
   constructor(data) {
     // Ghostscript may produce invalid metadata, so try to repair that first.
-    data = this._repair(data);
+    this._data = this._repair(data);
 
     // Convert the string to an XML document.
     const parser = new SimpleXMLParser({ lowerCaseName: true });
-    const xmlDocument = parser.parseFromString(data);
-
-    this._metadataMap = new Map();
-    this._data = data;
+    const xmlDocument = parser.parseFromString(this._data);
 
     if (xmlDocument) {
       this._parse(xmlDocument);
