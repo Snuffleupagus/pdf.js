@@ -1246,19 +1246,6 @@ function MathClamp(v, min, max) {
   return Math.min(Math.max(v, min), max);
 }
 
-// TODO: Remove this once `Math.sumPrecise` is generally available.
-if (
-  (typeof PDFJSDev === "undefined" ||
-    PDFJSDev.test("SKIP_BABEL && !MOZCENTRAL")) &&
-  typeof Math.sumPrecise !== "function"
-) {
-  // Note that this isn't a "proper" polyfill, but since we're only using it to
-  // replace `Array.prototype.reduce()` invocations it should be fine.
-  Math.sumPrecise = function (numbers) {
-    return numbers.reduce((a, b) => a + b, 0);
-  };
-}
-
 // See https://developer.mozilla.org/en-US/docs/Web/API/Response/bytes#browser_compatibility
 if (
   typeof PDFJSDev !== "undefined" &&
