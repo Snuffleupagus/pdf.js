@@ -608,10 +608,6 @@ function string32(value) {
   );
 }
 
-function objectSize(obj) {
-  return Object.keys(obj).length;
-}
-
 // Checks the endianness of the platform.
 function isLittleEndian() {
   const buffer8 = new Uint8Array(4);
@@ -1246,6 +1242,13 @@ function MathClamp(v, min, max) {
   return Math.min(Math.max(v, min), max);
 }
 
+// TODO: Remove this once `Object.keysLength` is generally available.
+if (typeof Object.keysLength !== "function") {
+  Object.keysLength = function (obj) {
+    return Object.keys(obj).length;
+  };
+}
+
 // TODO: Remove this once `Math.sumPrecise` is generally available.
 if (
   (typeof PDFJSDev === "undefined" ||
@@ -1343,7 +1346,6 @@ export {
   MathClamp,
   MeshFigureType,
   normalizeUnicode,
-  objectSize,
   OPS,
   PageActionEventType,
   PasswordException,
