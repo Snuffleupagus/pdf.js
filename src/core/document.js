@@ -21,7 +21,6 @@ import {
   InvalidPDFException,
   isArrayEqual,
   makeArr,
-  objectSize,
   PageActionEventType,
   RenderingIntentFlag,
   shadow,
@@ -1982,7 +1981,7 @@ class PDFDocument {
         await Promise.all(allPromises);
 
         return {
-          allFields: objectSize(allFields) > 0 ? allFields : null,
+          allFields: Object.keysLength(allFields) > 0 ? allFields : null,
           orphanFields,
         };
       });

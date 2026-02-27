@@ -21,7 +21,6 @@ import {
   ImageKind,
   InvalidPDFException,
   isNodeJS,
-  objectSize,
   OPS,
   PasswordException,
   PasswordResponses,
@@ -2244,7 +2243,7 @@ describe("api", function () {
         pdfDoc.getPermissions()
       );
 
-      const totalPermissionCount = Object.keys(PermissionFlag).length;
+      const totalPermissionCount = Object.keysLength(PermissionFlag);
       const permissions = await Promise.all([promise0, promise1, promise2]);
 
       expect(permissions[0].length).toEqual(totalPermissionCount - 1);
@@ -3666,7 +3665,7 @@ describe("api", function () {
       const { items, styles, lang } = await page.getTextContent();
 
       expect(items.length).toEqual(15);
-      expect(objectSize(styles)).toEqual(5);
+      expect(Object.keysLength(styles)).toEqual(5);
       expect(lang).toEqual("en");
 
       const text = mergeText(items);
