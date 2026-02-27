@@ -1331,7 +1331,7 @@ class Font {
 
     // if at least one width is present, remeasure all chars when exists
     this.remeasure =
-      (!isStandardFont || isNarrow) && Object.keys(this.widths).length > 0;
+      (!isStandardFont || isNarrow) && Object.keysLength(this.widths) > 0;
     if (
       (isStandardFont || isMappedToStandardFont) &&
       type === "CIDFontType2" &&

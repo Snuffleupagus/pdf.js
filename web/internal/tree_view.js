@@ -914,7 +914,7 @@ class TreeView {
       typeof val === "object" &&
       !Array.isArray(val) &&
       typeof val.name === "string" &&
-      Object.keys(val).length === 1
+      Object.keysLength(val) === 1
     );
   }
 
@@ -926,7 +926,7 @@ class TreeView {
       !Array.isArray(val) &&
       typeof val.num === "number" &&
       typeof val.gen === "number" &&
-      Object.keys(val).length === 2
+      Object.keysLength(val) === 2
     );
   }
 

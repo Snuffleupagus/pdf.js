@@ -19,7 +19,6 @@ import {
   DocumentActionEventType,
   FormatError,
   info,
-  objectSize,
   PermissionFlag,
   shadow,
   stringToPDFString,
@@ -1064,7 +1063,7 @@ class Catalog {
     return shadow(
       this,
       "openAction",
-      objectSize(openAction) > 0 ? openAction : null
+      Object.keysLength(openAction) > 0 ? openAction : null
     );
   }
 

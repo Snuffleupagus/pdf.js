@@ -596,10 +596,6 @@ function stringToBytes(str) {
   return bytes;
 }
 
-function objectSize(obj) {
-  return Object.keys(obj).length;
-}
-
 // Checks the endianness of the platform.
 function isLittleEndian() {
   const buffer8 = new Uint8Array(4);
@@ -1213,6 +1209,13 @@ const makeArr = () => [];
 const makeMap = () => new Map();
 const makeObj = () => Object.create(null);
 
+// TODO: Remove this once `Object.keysLength` is generally available.
+if (typeof Object.keysLength !== "function") {
+  Object.keysLength = function (obj) {
+    return Object.keys(obj).length;
+  };
+}
+
 // See https://developer.mozilla.org/en-US/docs/Web/API/Blob/bytes#browser_compatibility
 if (
   typeof PDFJSDev !== "undefined" &&
@@ -1309,7 +1312,6 @@ export {
   makeObj,
   MeshFigureType,
   normalizeUnicode,
-  objectSize,
   OPS,
   PageActionEventType,
   PasswordException,

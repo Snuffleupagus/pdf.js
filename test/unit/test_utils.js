@@ -103,7 +103,7 @@ class XRefMock {
 
   getNewPersistentRef(obj) {
     if (this._newPersistentRefNum === null) {
-      this._newPersistentRefNum = Object.keys(this._map).length || 1;
+      this._newPersistentRefNum = Object.keysLength(this._map) || 1;
     }
     const ref = Ref.get(this._newPersistentRefNum++, 0);
     this._map[ref.toString()] = obj;
@@ -112,7 +112,7 @@ class XRefMock {
 
   getNewTemporaryRef() {
     if (this._newTemporaryRefNum === null) {
-      this._newTemporaryRefNum = Object.keys(this._map).length || 1;
+      this._newTemporaryRefNum = Object.keysLength(this._map) || 1;
     }
     return Ref.get(this._newTemporaryRefNum++, 0);
   }
