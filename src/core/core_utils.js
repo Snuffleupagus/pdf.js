@@ -19,7 +19,6 @@ import {
   BaseException,
   hexNumbers,
   makeArr,
-  objectSize,
   stringToPDFString,
   Util,
   warn,
@@ -515,7 +514,7 @@ function collectActions(xref, dict, eventType) {
       actions.Action = list;
     }
   }
-  return objectSize(actions) > 0 ? actions : null;
+  return Object.keysLength(actions) > 0 ? actions : null;
 }
 
 const XMLEntities = {

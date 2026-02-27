@@ -713,7 +713,7 @@ function isDestArraysEqual(firstDest, secondDest) {
       return false;
     }
     if (first !== null && typeof first === "object" && second !== null) {
-      if (Object.keys(first).length !== Object.keys(second).length) {
+      if (Object.keysLength(first) !== Object.keysLength(second)) {
         return false;
       }
       for (const key in first) {
