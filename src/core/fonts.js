@@ -286,11 +286,6 @@ function writeSignedInt16(bytes, index, value) {
   bytes[index] = value >>> 8;
 }
 
-function signedInt16(b0, b1) {
-  const value = (b0 << 8) + b1;
-  return value & (1 << 15) ? value - 0x10000 : value;
-}
-
 function writeUint32(bytes, index, value) {
   bytes[index + 3] = value & 0xff;
   bytes[index + 2] = value >>> 8;
@@ -1778,7 +1773,11 @@ class Font {
           subHeaders.push({
             firstCode: file.getUint16(),
             entryCount: file.getUint16(),
-            idDelta: signedInt16(file.getByte(), file.getByte()),
+            idDelta: (function getInt16() {
+              const b = file.getBytes(2),
+                dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+              return dv.getInt16(0);
+            })(),
             idRangePos: file.pos + file.getUint16(),
           });
         }
@@ -2035,13 +2034,14 @@ class Font {
         // If the offsets are wrong or the glyph is too small, remove it.
         return glyphProfile;
       }
-      const glyf = source.subarray(sourceStart, sourceEnd);
+      const glyf = source.subarray(sourceStart, sourceEnd),
+        view = new DataView(glyf.buffer, glyf.byteOffset, glyf.byteLength);
 
       // Sanitize the glyph bounding box.
-      const xMin = signedInt16(glyf[2], glyf[3]);
-      const yMin = signedInt16(glyf[4], glyf[5]);
-      const xMax = signedInt16(glyf[6], glyf[7]);
-      const yMax = signedInt16(glyf[8], glyf[9]);
+      const xMin = view.getInt16(2);
+      const yMin = view.getInt16(4);
+      const xMax = view.getInt16(6);
+      const yMax = view.getInt16(8);
 
       if (xMin > xMax) {
         writeSignedInt16(glyf, 2, xMax);
@@ -2052,7 +2052,7 @@ class Font {
         writeSignedInt16(glyf, 8, yMin);
       }
 
-      const contoursCount = signedInt16(glyf[0], glyf[1]);
+      const contoursCount = view.getInt16(0);
       if (contoursCount < 0) {
         if (contoursCount < -1) {
           // OTS doesn't like contour count to be less than -1.
@@ -2160,7 +2160,7 @@ class Font {
         view.setInt32(0, 0x00010000);
       }
 
-      const indexToLocFormat = signedInt16(data[50], data[51]);
+      const indexToLocFormat = view.getInt16(50);
       if (indexToLocFormat < 0 || indexToLocFormat > 1) {
         info(
           "Attempting to fix invalid indexToLocFormat in head table: " +
@@ -2490,11 +2490,10 @@ class Font {
     // 0xC0-DF == -1 and 0xE0-FF == -2
 
     function sanitizeTTProgram(table, ttContext) {
-      let data = table.data;
+      let { data, view } = table;
       let i = 0,
         j,
         n,
-        b,
         funcId,
         pc,
         lastEndf = 0,
@@ -2527,8 +2526,8 @@ class Font {
             i += n * 2;
           } else {
             for (j = 0; j < n; j++) {
-              b = data[i++];
-              stack.push(signedInt16(b, data[i++]));
+              stack.push(view.getInt16(i));
+              i += 2;
             }
           }
         } else if ((op & 0xf8) === 0xb0) {
@@ -2548,8 +2547,8 @@ class Font {
             i += n * 2;
           } else {
             for (j = 0; j < n; j++) {
-              b = data[i++];
-              stack.push(signedInt16(b, data[i++]));
+              stack.push(view.getInt16(i));
+              i += 2;
             }
           }
         } else if (op === 0x2b && !tooComplexToFollowFunctions) {
@@ -2574,7 +2573,7 @@ class Font {
                 funcId in ttContext.functionsDefined &&
                 !functionsCalled.includes(funcId)
               ) {
-                callstack.push({ data, i, stackTop: stack.length - 1 });
+                callstack.push({ data, view, i, stackTop: stack.length - 1 });
                 functionsCalled.push(funcId);
                 pc = ttContext.functionsDefined[funcId];
                 if (!pc) {
@@ -2583,6 +2582,7 @@ class Font {
                   return;
                 }
                 data = pc.data;
+                view = pc.view;
                 i = pc.i;
               }
             }
@@ -2597,7 +2597,7 @@ class Font {
           // collecting information about which functions are defined
           lastDeff = i;
           funcId = stack.pop();
-          ttContext.functionsDefined[funcId] = { data, i };
+          ttContext.functionsDefined[funcId] = { data, view, i };
         } else if (op === 0x2d) {
           // ENDF - end of function
           if (inFDEF) {
@@ -2612,6 +2612,7 @@ class Font {
             }
             funcId = functionsCalled.pop();
             data = pc.data;
+            view = pc.view;
             i = pc.i;
             ttContext.functionsStackDeltas[funcId] = stack.length - pc.stackTop;
           }
@@ -2903,9 +2904,7 @@ class Font {
         );
         metrics[j] = (advanceWidth >> 8) & 0xff;
         metrics[j + 1] = advanceWidth & 0xff;
-        const lsb = Math.round(
-          scaleFactors[i] * signedInt16(metrics[j + 2], metrics[j + 3])
-        );
+        const lsb = Math.round(scaleFactors[i] * metricsView.getInt16(j + 2));
         writeSignedInt16(metrics, j + 2, lsb);
       }
     }
@@ -2990,6 +2989,8 @@ class Font {
     if (!tables.hhea) {
       throw new FormatError('Required "hhea" table is not found');
     }
+    const headView = tables.head.view,
+      hheaView = tables.hhea.view;
 
     // Sanitizer reduces the glyph advanceWidth to the maxAdvanceWidth
     // Sometimes it's 0. That needs to be fixed
@@ -3001,12 +3002,12 @@ class Font {
     // Extract some more font properties from the OpenType head and
     // hhea tables; yMin and descent value are always negative.
     const metricsOverride = {
-      unitsPerEm: tables.head.view.getUint16(18),
-      yMax: signedInt16(tables.head.data[42], tables.head.data[43]),
-      yMin: signedInt16(tables.head.data[38], tables.head.data[39]),
-      ascent: signedInt16(tables.hhea.data[4], tables.hhea.data[5]),
-      descent: signedInt16(tables.hhea.data[6], tables.hhea.data[7]),
-      lineGap: signedInt16(tables.hhea.data[8], tables.hhea.data[9]),
+      unitsPerEm: headView.getUint16(18),
+      yMax: headView.getInt16(42),
+      yMin: headView.getInt16(38),
+      ascent: hheaView.getInt16(4),
+      descent: hheaView.getInt16(6),
+      lineGap: hheaView.getInt16(8),
     };
 
     // PDF FontDescriptor metrics lie -- using data from actual font.
