@@ -281,10 +281,6 @@ class Glyph {
   }
 }
 
-function int16(b0, b1) {
-  return (b0 << 8) + b1;
-}
-
 function writeSignedInt16(bytes, index, value) {
   bytes[index + 1] = value;
   bytes[index] = value >>> 8;
@@ -1703,8 +1699,10 @@ class Font {
 
           let correctlySorted = true;
           if (i < numTables - 1) {
-            const nextBytes = file.peekBytes(2),
-              nextPlatformId = int16(nextBytes[0], nextBytes[1]);
+            const nextPlatformId = file.getUint16();
+            if (nextPlatformId !== -1) {
+              file.skip(-2); // Reset the stream position.
+            }
             if (nextPlatformId < platformId) {
               correctlySorted = false;
             }
@@ -1978,7 +1976,7 @@ class Font {
       let numOfMetrics = file.getUint16();
 
       if (caretOffset !== 0) {
-        const macStyle = int16(headTable.data[44], headTable.data[45]);
+        const macStyle = headTable.view.getUint16(44);
         if (!(macStyle & 2)) {
           // Suppress OTS warnings about the `caretOffset` in the hhea-table.
           header.data[22] = 0;
@@ -2851,10 +2849,7 @@ class Font {
       writeUint32(tables.maxp.data, 0, version);
     }
 
-    let isGlyphLocationsLong = int16(
-      tables.head.data[50],
-      tables.head.data[51]
-    );
+    let isGlyphLocationsLong = tables.head.view.getUint16(50);
     if (tables.loca) {
       const locaLength = isGlyphLocationsLong
         ? (numGlyphs + 1) * 4
@@ -2898,12 +2893,13 @@ class Font {
         isGlyphLocationsLong = tables.head.data[51] = isLocationLong ? 1 : 0;
       }
 
-      const metrics = tables.hmtx.data;
+      const metrics = tables.hmtx.data,
+        metricsView = tables.hmtx.view;
 
       for (let i = 0; i < numGlyphs; i++) {
         const j = 4 * i;
         const advanceWidth = Math.round(
-          scaleFactors[i] * int16(metrics[j], metrics[j + 1])
+          scaleFactors[i] * metricsView.getUint16(j)
         );
         metrics[j] = (advanceWidth >> 8) & 0xff;
         metrics[j + 1] = advanceWidth & 0xff;
@@ -3005,7 +3001,7 @@ class Font {
     // Extract some more font properties from the OpenType head and
     // hhea tables; yMin and descent value are always negative.
     const metricsOverride = {
-      unitsPerEm: int16(tables.head.data[18], tables.head.data[19]),
+      unitsPerEm: tables.head.view.getUint16(18),
       yMax: signedInt16(tables.head.data[42], tables.head.data[43]),
       yMin: signedInt16(tables.head.data[38], tables.head.data[39]),
       ascent: signedInt16(tables.hhea.data[4], tables.hhea.data[5]),
