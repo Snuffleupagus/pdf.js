@@ -16,7 +16,6 @@
 import {
   BaseException,
   DrawOPS,
-  FeatureTest,
   shadow,
   stripPath,
   Util,
@@ -677,16 +676,9 @@ function setLayerDimensions(
   if (viewport instanceof PageViewport) {
     const { pageWidth, pageHeight } = viewport.rawDims;
     const { style } = div;
-    const useRound = FeatureTest.isCSSRoundSupported;
 
-    const w = `var(--total-scale-factor) * ${pageWidth}px`,
-      h = `var(--total-scale-factor) * ${pageHeight}px`;
-    const widthStr = useRound
-        ? `round(down, ${w}, var(--scale-round-x))`
-        : `calc(${w})`,
-      heightStr = useRound
-        ? `round(down, ${h}, var(--scale-round-y))`
-        : `calc(${h})`;
+    const widthStr = `round(down, var(--total-scale-factor) * ${pageWidth}px, var(--scale-round-x))`,
+      heightStr = `round(down, var(--total-scale-factor) * ${pageHeight}px, var(--scale-round-y))`;
 
     if (!mustFlip || viewport.rotation % 180 === 0) {
       style.width = widthStr;

@@ -601,17 +601,13 @@ function objectSize(obj) {
   return Object.keys(obj).length;
 }
 
-// Checks the endianness of the platform.
-function isLittleEndian() {
-  const buffer8 = new Uint8Array(4);
-  buffer8[0] = 1;
-  const view32 = new Uint32Array(buffer8.buffer, 0, 1);
-  return view32[0] === 1;
-}
-
 class FeatureTest {
   static get isLittleEndian() {
-    return shadow(this, "isLittleEndian", isLittleEndian());
+    const buffer8 = new Uint8Array(4);
+    buffer8[0] = 1;
+    const view32 = new Uint32Array(buffer8.buffer, 0, 1);
+
+    return shadow(this, "isLittleEndian", view32[0] === 1);
   }
 
   static get isOffscreenCanvasSupported() {
@@ -658,14 +654,6 @@ class FeatureTest {
         (typeof PDFJSDev !== "undefined" && PDFJSDev.test("MOZCENTRAL")) ||
         userAgent.includes("Firefox"),
     });
-  }
-
-  static get isCSSRoundSupported() {
-    return shadow(
-      this,
-      "isCSSRoundSupported",
-      globalThis.CSS?.supports?.("width: round(1.5px, 1px)")
-    );
   }
 
   static get isAlphaColorInputSupported() {
@@ -1256,38 +1244,6 @@ if (
 ) {
   Response.prototype.bytes = async function () {
     return new Uint8Array(await this.arrayBuffer());
-  };
-}
-
-// TODO: Remove this once Safari 17.4 is the lowest supported version.
-if (
-  typeof PDFJSDev !== "undefined" &&
-  !PDFJSDev.test("SKIP_BABEL") &&
-  typeof AbortSignal.any !== "function"
-) {
-  AbortSignal.any = function (iterable) {
-    const ac = new AbortController();
-    const { signal } = ac;
-
-    // Return immediately if any of the signals are already aborted.
-    for (const s of iterable) {
-      if (s.aborted) {
-        ac.abort(s.reason);
-        return signal;
-      }
-    }
-    // Register "abort" listeners for all signals.
-    for (const s of iterable) {
-      s.addEventListener(
-        "abort",
-        () => {
-          ac.abort(s.reason);
-        },
-        { signal } // Automatically remove the listener.
-      );
-    }
-
-    return signal;
   };
 }
 

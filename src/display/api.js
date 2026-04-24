@@ -42,14 +42,6 @@ import {
   CanvasDependencyTracker,
   CanvasImagesTracker,
 } from "./canvas_dependency_tracker.js";
-import {
-  deprecated,
-  isDataScheme,
-  isValidFetchUrl,
-  PageViewport,
-  RenderingCancelledException,
-  StatTimer,
-} from "./display_utils.js";
 import { FontFaceObject, FontLoader } from "./font_loader.js";
 import {
   FontInfo,
@@ -63,6 +55,13 @@ import {
   isRefProxy,
   LoopbackPort,
 } from "./api_utils.js";
+import {
+  isDataScheme,
+  isValidFetchUrl,
+  PageViewport,
+  RenderingCancelledException,
+  StatTimer,
+} from "./display_utils.js";
 import { MessageHandler, wrapReason } from "../shared/message_handler.js";
 import {
   NodeBinaryDataFactory,
@@ -625,18 +624,6 @@ class PDFDataRangeTransport {
     this.initialData = initialData;
     this.progressiveDone = progressiveDone;
     this.contentDispositionFilename = contentDispositionFilename;
-
-    if (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) {
-      Object.defineProperty(this, "onDataProgress", {
-        value: () => {
-          deprecated(
-            "`PDFDataRangeTransport.prototype.onDataProgress` - method was " +
-              "removed, since loading progress is now reported automatically " +
-              "through the `PDFDataTransportStream` class (and related code)."
-          );
-        },
-      });
-    }
   }
 
   /**
