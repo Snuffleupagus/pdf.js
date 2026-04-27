@@ -178,7 +178,7 @@ class PDFScriptingManager {
         return; // The document was closed while the properties resolved.
       }
 
-      const objects = fieldObjects ? structuredClone(fieldObjects) : null;
+      const objects = fieldObjects ? Object.fromEntries(fieldObjects) : null;
       if (objects) {
         for (const val of Object.values(objects)) {
           for (const elem of val) {
