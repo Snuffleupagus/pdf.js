@@ -1309,9 +1309,11 @@ describe("api", function () {
 
     it("gets destinations, from /Dests dictionary", async function () {
       const destinations = await pdfDocument.getDestinations();
-      expect(destinations).toEqual({
-        chapter1: [{ gen: 0, num: 17 }, { name: "XYZ" }, 0, 841.89, null],
-      });
+      expect(destinations).toEqual(
+        new Map([
+          ["chapter1", [{ gen: 0, num: 17 }, { name: "XYZ" }, 0, 841.89, null]],
+        ])
+      );
     });
 
     it("gets a destination, from /Dests dictionary", async function () {
@@ -1336,10 +1338,12 @@ describe("api", function () {
       const loadingTask = getDocument(buildGetDocumentParams("issue6204.pdf"));
       const pdfDoc = await loadingTask.promise;
       const destinations = await pdfDoc.getDestinations();
-      expect(destinations).toEqual({
-        "Page.1": [{ num: 1, gen: 0 }, { name: "XYZ" }, 0, 375, null],
-        "Page.2": [{ num: 6, gen: 0 }, { name: "XYZ" }, 0, 375, null],
-      });
+      expect(destinations).toEqual(
+        new Map([
+          ["Page.1", [{ num: 1, gen: 0 }, { name: "XYZ" }, 0, 375, null]],
+          ["Page.2", [{ num: 6, gen: 0 }, { name: "XYZ" }, 0, 375, null]],
+        ])
+      );
 
       await loadingTask.destroy();
     });
@@ -1348,11 +1352,13 @@ describe("api", function () {
       const loadingTask = getDocument(buildGetDocumentParams("issue19474.pdf"));
       const pdfDoc = await loadingTask.promise;
       const destinations = await pdfDoc.getDestinations();
-      expect(destinations).toEqual({
-        A: [{ num: 1, gen: 0 }, { name: "Fit" }],
-        B: [{ num: 4, gen: 0 }, { name: "Fit" }],
-        C: [{ num: 5, gen: 0 }, { name: "Fit" }],
-      });
+      expect(destinations).toEqual(
+        new Map([
+          ["A", [{ num: 1, gen: 0 }, { name: "Fit" }]],
+          ["B", [{ num: 4, gen: 0 }, { name: "Fit" }]],
+          ["C", [{ num: 5, gen: 0 }, { name: "Fit" }]],
+        ])
+      );
 
       await loadingTask.destroy();
     });
@@ -5829,7 +5835,7 @@ small scripts as well as for`);
         let pdfDoc = await loadingTask.promise;
 
         let destinations = await pdfDoc.getDestinations();
-        expect(Object.keys(destinations).sort()).toEqual(["foo", "foo_p2"]);
+        expect([...destinations.keys()].sort()).toEqual(["foo", "foo_p2"]);
 
         const data = await pdfDoc.extractPages([
           { document: null },
@@ -5841,7 +5847,7 @@ small scripts as well as for`);
         pdfDoc = await loadingTask.promise;
 
         destinations = await pdfDoc.getDestinations();
-        expect(Object.keys(destinations).sort()).toEqual([
+        expect([...destinations.keys()].sort()).toEqual([
           "foo",
           "foo_p2",
           "foo_p2_1",
@@ -5862,10 +5868,12 @@ small scripts as well as for`);
         let pdfDoc = await loadingTask.promise;
         let pagesRef = await getPageRefs(pdfDoc);
         let destinations = await pdfDoc.getDestinations();
-        expect(destinations).toEqual({
-          "Page.1": [pagesRef[0], { name: "XYZ" }, 0, 375, null],
-          "Page.2": [pagesRef[1], { name: "XYZ" }, 0, 375, null],
-        });
+        expect(destinations).toEqual(
+          new Map([
+            ["Page.1", [pagesRef[0], { name: "XYZ" }, 0, 375, null]],
+            ["Page.2", [pagesRef[1], { name: "XYZ" }, 0, 375, null]],
+          ])
+        );
 
         let data = await pdfDoc.extractPages([
           { document: null },
@@ -5880,12 +5888,14 @@ small scripts as well as for`);
 
         pagesRef = await getPageRefs(pdfDoc);
         destinations = await pdfDoc.getDestinations();
-        expect(destinations).toEqual({
-          "Page.1": [pagesRef[0], { name: "XYZ" }, 0, 375, null],
-          "Page.2": [pagesRef[1], { name: "XYZ" }, 0, 375, null],
-          "Page.1_p3": [pagesRef[2], { name: "XYZ" }, 0, 375, null],
-          "Page.2_p4": [pagesRef[3], { name: "XYZ" }, 0, 375, null],
-        });
+        expect(destinations).toEqual(
+          new Map([
+            ["Page.1", [pagesRef[0], { name: "XYZ" }, 0, 375, null]],
+            ["Page.2", [pagesRef[1], { name: "XYZ" }, 0, 375, null]],
+            ["Page.1_p3", [pagesRef[2], { name: "XYZ" }, 0, 375, null]],
+            ["Page.2_p4", [pagesRef[3], { name: "XYZ" }, 0, 375, null]],
+          ])
+        );
         const expectedDests = ["Page.2", "Page.1", "Page.2_p4", "Page.1_p3"];
         for (let i = 1; i <= 4; i++) {
           const pdfPage = await pdfDoc.getPage(i);
@@ -5907,16 +5917,18 @@ small scripts as well as for`);
 
         pagesRef = await getPageRefs(pdfDoc);
         destinations = await pdfDoc.getDestinations();
-        expect(destinations).toEqual({
-          "Page.1": [pagesRef[0], { name: "XYZ" }, 0, 375, null],
-          "Page.2": [pagesRef[1], { name: "XYZ" }, 0, 375, null],
-          "Page.1_p3": [pagesRef[2], { name: "XYZ" }, 0, 375, null],
-          "Page.2_p4": [pagesRef[3], { name: "XYZ" }, 0, 375, null],
-          "Page.1_p5": [pagesRef[4], { name: "XYZ" }, 0, 375, null],
-          "Page.2_p6": [pagesRef[5], { name: "XYZ" }, 0, 375, null],
-          "Page.1_p3_p7": [pagesRef[6], { name: "XYZ" }, 0, 375, null],
-          "Page.2_p4_p8": [pagesRef[7], { name: "XYZ" }, 0, 375, null],
-        });
+        expect(destinations).toEqual(
+          new Map([
+            ["Page.1", [pagesRef[0], { name: "XYZ" }, 0, 375, null]],
+            ["Page.2", [pagesRef[1], { name: "XYZ" }, 0, 375, null]],
+            ["Page.1_p3", [pagesRef[2], { name: "XYZ" }, 0, 375, null]],
+            ["Page.2_p4", [pagesRef[3], { name: "XYZ" }, 0, 375, null]],
+            ["Page.1_p5", [pagesRef[4], { name: "XYZ" }, 0, 375, null]],
+            ["Page.2_p6", [pagesRef[5], { name: "XYZ" }, 0, 375, null]],
+            ["Page.1_p3_p7", [pagesRef[6], { name: "XYZ" }, 0, 375, null]],
+            ["Page.2_p4_p8", [pagesRef[7], { name: "XYZ" }, 0, 375, null]],
+          ])
+        );
         expectedDests.push(
           "Page.2_p6",
           "Page.1_p5",
@@ -5948,10 +5960,12 @@ small scripts as well as for`);
 
         const pagesRef = await getPageRefs(pdfDoc);
         const destinations = await pdfDoc.getDestinations();
-        expect(destinations).toEqual({
-          "Page.1": [pagesRef[0], { name: "XYZ" }, 0, 375, null],
-          "Page.2": [pagesRef[1], { name: "XYZ" }, 0, 375, null],
-        });
+        expect(destinations).toEqual(
+          new Map([
+            ["Page.1", [pagesRef[0], { name: "XYZ" }, 0, 375, null]],
+            ["Page.2", [pagesRef[1], { name: "XYZ" }, 0, 375, null]],
+          ])
+        );
         const pdfPage = await pdfDoc.getPage(3);
         const annots = await pdfPage.getAnnotations();
         expect(annots.length).toEqual(0);

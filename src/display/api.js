@@ -784,7 +784,7 @@ class PDFDocumentProxy {
   }
 
   /**
-   * @returns {Promise<Object<string, Array<any>>>} A promise that is resolved
+   * @returns {Promise<Map<string, Array<any>>>} A promise that is resolved
    *   with a mapping from named destinations to references.
    *
    * This can be slow for large documents. Use `getDestination` instead.
