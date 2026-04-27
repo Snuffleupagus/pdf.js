@@ -1038,8 +1038,8 @@ class Catalog {
         warn(`Bad value, for key "${key}", in ViewerPreferences: ${value}.`);
         continue;
       }
-      prefs ??= Object.create(null);
-      prefs[key] = prefValue;
+      prefs ??= new Map();
+      prefs.set(key, prefValue);
     }
     return shadow(this, "viewerPreferences", prefs);
   }
