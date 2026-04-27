@@ -1659,7 +1659,7 @@ describe("api", function () {
       const pdfDoc = await loadingTask.promise;
       const attachments = await pdfDoc.getAttachments();
 
-      expect(attachments["foo.txt"]).toEqual({
+      expect(attachments.get("foo.txt")).toEqual({
         rawFilename: "foo.txt",
         filename: "foo.txt",
         content: new Uint8Array([98, 97, 114, 32, 98, 97, 122, 32, 10]),
@@ -1675,7 +1675,7 @@ describe("api", function () {
       const attachments = await pdfDoc.getAttachments();
 
       const { rawFilename, filename, content, description } =
-        attachments["empty.pdf"];
+        attachments.get("empty.pdf");
       expect(rawFilename).toEqual("Empty page.pdf");
       expect(filename).toEqual("Empty page.pdf");
       expect(content).toBeInstanceOf(Uint8Array);
@@ -6393,7 +6393,7 @@ small scripts as well as for`);
 
         // Verify the original document has the expected attachment.
         const originalAttachments = await pdfDoc.getAttachments();
-        expect(originalAttachments["foo.txt"]).toBeDefined();
+        expect(originalAttachments.has("foo.txt")).toBeTrue();
 
         const data = await pdfDoc.extractPages([
           { document: null, includePages: [0] },
@@ -6405,7 +6405,7 @@ small scripts as well as for`);
 
         const attachments = await pdfDoc.getAttachments();
         expect(attachments).not.toBeNull();
-        expect(attachments["foo.txt"]).toEqual({
+        expect(attachments.get("foo.txt")).toEqual({
           rawFilename: "foo.txt",
           filename: "foo.txt",
           content: new Uint8Array([98, 97, 114, 32, 98, 97, 122, 32, 10]),
@@ -6436,13 +6436,13 @@ small scripts as well as for`);
         const expectedContent = new Uint8Array([
           98, 97, 114, 32, 98, 97, 122, 32, 10,
         ]);
-        expect(attachments["foo.txt"]).toEqual({
+        expect(attachments.get("foo.txt")).toEqual({
           rawFilename: "foo.txt",
           filename: "foo.txt",
           content: expectedContent,
           description: "",
         });
-        expect(attachments["foo.txt_1"]).toEqual({
+        expect(attachments.get("foo.txt_1")).toEqual({
           rawFilename: "foo.txt",
           filename: "foo.txt",
           content: expectedContent,

@@ -121,8 +121,7 @@ class PDFAttachmentViewer extends BaseTreeViewer {
     const ul = document.createElement("ul");
     fragment.append(ul);
     let attachmentsCount = 0;
-    for (const name in attachments) {
-      const item = attachments[name];
+    for (const item of attachments.values()) {
       const li = document.createElement("li");
       ul.append(li);
       const element = document.createElement("a");
@@ -146,14 +145,14 @@ class PDFAttachmentViewer extends BaseTreeViewer {
       if (renderedPromise !== this._renderedCapability.promise) {
         return; // The FileAttachment annotation belongs to a previous document.
       }
-      const attachments = this._attachments || Object.create(null);
+      const attachments = this._attachments ?? new Map();
 
-      for (const name in attachments) {
+      for (const name of attachments.keys()) {
         if (item.filename === name) {
           return; // Ignore the new attachment if it already exists.
         }
       }
-      attachments[item.filename] = item;
+      attachments.set(item.filename, item);
 
       this.render({
         attachments,

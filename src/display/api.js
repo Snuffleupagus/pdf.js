@@ -847,8 +847,8 @@ class PDFDocumentProxy {
   }
 
   /**
-   * @returns {Promise<any>} A promise that is resolved with a lookup table
-   *   for mapping named attachments to their content.
+   * @returns {Promise<Map | null>} A promise that is resolved with a lookup
+   *   table for mapping named attachments to their content.
    */
   getAttachments() {
     return this._transport.getAttachments();

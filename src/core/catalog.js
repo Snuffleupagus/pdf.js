@@ -1076,9 +1076,11 @@ class Catalog {
       const nameTree = new NameTree(obj.getRaw("EmbeddedFiles"), this.xref);
       for (const [key, value] of nameTree.getAll()) {
         const fs = new FileSpec(value);
-        attachments ??= Object.create(null);
-        attachments[stringToPDFString(key, /* keepEscapeSequence = */ true)] =
-          fs.serializable;
+        attachments ??= new Map();
+        attachments.set(
+          stringToPDFString(key, /* keepEscapeSequence = */ true),
+          fs.serializable
+        );
       }
     }
     return shadow(this, "attachments", attachments);
@@ -1782,10 +1784,9 @@ class Catalog {
             const name = target.get("N");
 
             if (isName(relationship, "C") && typeof name === "string") {
-              attachment =
-                docAttachments[
-                  stringToPDFString(name, /* keepEscapeSequence = */ true)
-                ];
+              attachment = docAttachments.get(
+                stringToPDFString(name, /* keepEscapeSequence = */ true)
+              );
             }
           }
 
