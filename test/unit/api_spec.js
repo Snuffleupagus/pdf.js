@@ -831,9 +831,9 @@ describe("api", function () {
       expect(pdfDocument.numPages).toEqual(1);
 
       const jsActions = await pdfDocument.getJSActions();
-      expect(jsActions).toEqual({
-        OpenAction: ["func=function(){app.alert(1)};func();"],
-      });
+      expect(jsActions).toEqual(
+        new Map([["OpenAction", ["func=function(){app.alert(1)};func();"]]])
+      );
 
       const page = await pdfDocument.getPage(1);
       expect(page).toBeInstanceOf(PDFPageProxy);
@@ -1697,8 +1697,9 @@ describe("api", function () {
       // PDF document with "JavaScript" action in the OpenAction dictionary.
       const loadingTask = getDocument(buildGetDocumentParams("issue6106.pdf"));
       const pdfDoc = await loadingTask.promise;
-      const { OpenAction } = await pdfDoc.getJSActions();
+      const jsActions = await pdfDoc.getJSActions();
 
+      const OpenAction = jsActions.get("OpenAction");
       expect(OpenAction).toEqual([
         "this.print({bUI:true,bSilent:false,bShrinkToFit:true});",
       ]);
@@ -1742,21 +1743,27 @@ describe("api", function () {
       const page3 = await pdfDoc.getPage(3);
       const page3Actions = await page3.getJSActions();
 
-      expect(docActions).toEqual({
-        DidPrint: [`this.getField("Text2").value = "DidPrint";`],
-        DidSave: [`this.getField("Text2").value = "DidSave";`],
-        WillClose: [`this.getField("Text1").value = "WillClose";`],
-        WillPrint: [`this.getField("Text1").value = "WillPrint";`],
-        WillSave: [`this.getField("Text1").value = "WillSave";`],
-      });
-      expect(page1Actions).toEqual({
-        PageOpen: [`this.getField("Text1").value = "PageOpen 1";`],
-        PageClose: [`this.getField("Text2").value = "PageClose 1";`],
-      });
-      expect(page3Actions).toEqual({
-        PageOpen: [`this.getField("Text5").value = "PageOpen 3";`],
-        PageClose: [`this.getField("Text6").value = "PageClose 3";`],
-      });
+      expect(docActions).toEqual(
+        new Map([
+          ["DidPrint", [`this.getField("Text2").value = "DidPrint";`]],
+          ["DidSave", [`this.getField("Text2").value = "DidSave";`]],
+          ["WillClose", [`this.getField("Text1").value = "WillClose";`]],
+          ["WillPrint", [`this.getField("Text1").value = "WillPrint";`]],
+          ["WillSave", [`this.getField("Text1").value = "WillSave";`]],
+        ])
+      );
+      expect(page1Actions).toEqual(
+        new Map([
+          ["PageOpen", [`this.getField("Text1").value = "PageOpen 1";`]],
+          ["PageClose", [`this.getField("Text2").value = "PageClose 1";`]],
+        ])
+      );
+      expect(page3Actions).toEqual(
+        new Map([
+          ["PageOpen", [`this.getField("Text5").value = "PageOpen 3";`]],
+          ["PageClose", [`this.getField("Text6").value = "PageClose 3";`]],
+        ])
+      );
 
       await loadingTask.destroy();
     });
@@ -1805,11 +1812,14 @@ describe("api", function () {
             name: "Button1",
             rect: [455.436, 719.678, 527.436, 739.678],
             hidden: false,
-            actions: {
-              Action: [
-                `this.getField("Text1").value = this.info.authors.join("::");`,
+            actions: new Map([
+              [
+                "Action",
+                [
+                  `this.getField("Text1").value = this.info.authors.join("::");`,
+                ],
               ],
-            },
+            ]),
             page: 0,
             strokeColor: null,
             fillColor: new Uint8ClampedArray([192, 192, 192]),

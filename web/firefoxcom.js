@@ -212,7 +212,7 @@ if (PDFJSDev.test("GECKOVIEW")) {
             // lead to have modified annotations.
             const hasWillPrint =
               pdfViewer.enableScripting &&
-              !!(await pdfDocument.getJSActions())?.WillPrint;
+              !!(await pdfDocument.getJSActions())?.has("WillPrint");
 
             result = hasUnchangedAnnotations && !hasWillPrint;
           } catch {

@@ -865,8 +865,8 @@ class PDFDocumentProxy {
   }
 
   /**
-   * @returns {Promise<Object | null>} A promise that is resolved with
-   *   an {Object} with the JavaScript actions:
+   * @returns {Promise<Map | null>} A promise that is resolved with a {Map} with
+   *   the JavaScript actions:
    *     - from the name tree.
    *     - from A or AA entries in the catalog dictionary.
    *   , or `null` if no JavaScript exists.
@@ -1410,8 +1410,8 @@ class PDFPageProxy {
   }
 
   /**
-   * @returns {Promise<Object>} A promise that is resolved with an
-   *   {Object} with JS actions.
+   * @returns {Promise<Map>} A promise that is resolved with a {Map} with JS
+   *  actions.
    */
   getJSActions() {
     return this._transport.getPageJSActions(this._pageIndex);

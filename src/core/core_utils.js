@@ -18,7 +18,6 @@ import {
   assert,
   BaseException,
   makeArr,
-  objectSize,
   stringToPDFString,
   Util,
   warn,
@@ -443,7 +442,7 @@ function _collectJS(entry, xref, list, parents) {
 }
 
 function collectActions(xref, dict, eventType) {
-  const actions = Object.create(null);
+  const actions = new Map();
   const additionalActionsDicts = getInheritableProperty({
     dict,
     key: "AA",
@@ -469,7 +468,7 @@ function collectActions(xref, dict, eventType) {
         const list = [];
         _collectJS(rawActionDict, xref, list, parents);
         if (list.length > 0) {
-          actions[action] = list;
+          actions.set(action, list);
         }
       }
     }
@@ -481,10 +480,10 @@ function collectActions(xref, dict, eventType) {
     const list = [];
     _collectJS(actionDict, xref, list, parents);
     if (list.length > 0) {
-      actions.Action = list;
+      actions.set("Action", list);
     }
   }
-  return objectSize(actions) > 0 ? actions : null;
+  return actions.size > 0 ? actions : null;
 }
 
 const XMLEntities = {

@@ -984,9 +984,9 @@ class LinkAnnotationElement extends AnnotationElement {
     } else {
       if (
         data.actions &&
-        (data.actions.Action ||
-          data.actions["Mouse Up"] ||
-          data.actions["Mouse Down"]) &&
+        (data.actions.has("Action") ||
+          data.actions.has("Mouse Up") ||
+          data.actions.has("Mouse Down")) &&
         this.enableScripting &&
         this.hasJSActions
       ) {
@@ -1120,7 +1120,7 @@ class LinkAnnotationElement extends AnnotationElement {
       ["Mouse Up", "onmouseup"],
       ["Mouse Down", "onmousedown"],
     ]);
-    for (const name of Object.keys(data.actions)) {
+    for (const name of data.actions.keys()) {
       const jsName = map.get(name);
       if (!jsName) {
         continue;
@@ -1346,7 +1346,7 @@ class WidgetAnnotationElement extends AnnotationElement {
 
   _setEventListeners(element, elementData, names, getter) {
     for (const [baseName, eventName] of names) {
-      if (eventName === "Action" || this.data.actions?.[eventName]) {
+      if (eventName === "Action" || this.data.actions?.has(eventName)) {
         if (eventName === "Focus" || eventName === "Blur") {
           elementData ||= { focused: false };
         }
@@ -1357,10 +1357,10 @@ class WidgetAnnotationElement extends AnnotationElement {
           eventName,
           getter
         );
-        if (eventName === "Focus" && !this.data.actions?.Blur) {
+        if (eventName === "Focus" && !this.data.actions?.has("Blur")) {
           // Ensure that elementData will have the correct value.
           this._setEventListener(element, elementData, "blur", "Blur", null);
-        } else if (eventName === "Blur" && !this.data.actions?.Focus) {
+        } else if (eventName === "Blur" && !this.data.actions?.has("Focus")) {
           this._setEventListener(element, elementData, "focus", "Focus", null);
         }
       }
@@ -1595,7 +1595,7 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
           }
           elementData.lastCommittedValue = target.value;
           elementData.commitKey = 1;
-          if (!this.data.actions?.Focus) {
+          if (!this.data.actions?.has("Focus")) {
             elementData.focused = true;
           }
         });
@@ -1717,7 +1717,7 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
           if (!elementData.focused || !event.relatedTarget) {
             return;
           }
-          if (!this.data.actions?.Blur) {
+          if (!this.data.actions?.has("Blur")) {
             elementData.focused = false;
           }
           const { target } = event;
@@ -1765,7 +1765,7 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
           _blurListener(event);
         });
 
-        if (this.data.actions?.Keystroke) {
+        if (this.data.actions?.has("Keystroke")) {
           element.addEventListener("beforeinput", event => {
             elementData.lastCommittedValue = null;
             const { data, target } = event;

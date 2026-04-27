@@ -89,13 +89,13 @@ class PDFScriptingManager {
     if (!pdfDocument) {
       return;
     }
-    const [objects, calculationOrder, docActions] = await Promise.all([
+    const [fieldObjects, calculationOrder, docActions] = await Promise.all([
       pdfDocument.getFieldObjects(),
       pdfDocument.getCalculationOrderIds(),
       pdfDocument.getJSActions(),
     ]);
 
-    if (!objects && !docActions) {
+    if (!fieldObjects && !docActions) {
       // No FieldObjects or JavaScript actions were found in the document.
       await this.#destroyScripting();
       return;
@@ -178,6 +178,17 @@ class PDFScriptingManager {
         return; // The document was closed while the properties resolved.
       }
 
+      const objects = fieldObjects ? structuredClone(fieldObjects) : null;
+      if (objects) {
+        for (const val of Object.values(objects)) {
+          for (const elem of val) {
+            if (elem.actions instanceof Map) {
+              elem.actions = Object.fromEntries(elem.actions);
+            }
+          }
+        }
+      }
+
       await this.#scripting.createSandbox({
         objects,
         calculationOrder,
@@ -187,7 +198,7 @@ class PDFScriptingManager {
         },
         docInfo: {
           ...docProperties,
-          actions: docActions,
+          actions: docActions ? Object.fromEntries(docActions) : null,
         },
       });
 
@@ -410,7 +421,7 @@ class PDFScriptingManager {
         id: "page",
         name: "PageOpen",
         pageNumber,
-        actions,
+        actions: actions ? Object.fromEntries(actions) : null,
       });
     })();
     visitedPages.set(pageNumber, actionsPromise);

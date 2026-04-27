@@ -19,6 +19,7 @@ import {
   DocumentActionEventType,
   FormatError,
   info,
+  makeArr,
   objectSize,
   PermissionFlag,
   shadow,
@@ -1142,7 +1143,7 @@ class Catalog {
       );
       // Skip empty entries, similar to the `_collectJS` function.
       if (js) {
-        (javaScript ||= new Map()).set(name, js);
+        (javaScript ??= new Map()).set(name, js);
       }
     }
 
@@ -1173,14 +1174,10 @@ class Catalog {
     );
 
     if (javaScript) {
-      actions ||= Object.create(null);
+      actions ??= new Map();
 
       for (const [key, val] of javaScript) {
-        if (key in actions) {
-          actions[key].push(val);
-        } else {
-          actions[key] = [val];
-        }
+        actions.getOrInsertComputed(key, makeArr).push(val);
       }
     }
     return shadow(this, "jsActions", actions);

@@ -1728,7 +1728,7 @@ const PDFViewerApplication = {
       console.warn("Warning: JavaScript support is not enabled");
 
       // Hack to support auto printing.
-      for (const name in jsActions) {
+      for (const [name, action] of jsActions) {
         if (triggerAutoPrint) {
           break;
         }
@@ -1740,7 +1740,7 @@ const PDFViewerApplication = {
           case "DidPrint":
             continue;
         }
-        triggerAutoPrint = jsActions[name].some(js => AutoPrintRegExp.test(js));
+        triggerAutoPrint = action.some(js => AutoPrintRegExp.test(js));
       }
     }
 
