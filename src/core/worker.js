@@ -391,59 +391,56 @@ class WorkerMessageHandler {
         .then(pdfManagerReady, onFailure);
     }
 
-    handler.on("GetPage", function (data) {
-      return pdfManager.getPage(data.pageIndex).then(function (page) {
-        return Promise.all([
-          pdfManager.ensure(page, "rotate"),
-          pdfManager.ensure(page, "ref"),
-          pdfManager.ensure(page, "userUnit"),
-          pdfManager.ensure(page, "view"),
-        ]).then(function ([rotate, ref, userUnit, view]) {
-          return {
-            rotate,
-            ref,
-            refStr: ref?.toString() ?? null,
-            userUnit,
-            view,
-          };
-        });
-      });
+    handler.on("GetPage", async function ({ pageIndex }) {
+      const page = await pdfManager.getPage(pageIndex);
+      const [rotate, ref, userUnit, view] = await Promise.all([
+        pdfManager.ensure(page, "rotate"),
+        pdfManager.ensure(page, "ref"),
+        pdfManager.ensure(page, "userUnit"),
+        pdfManager.ensure(page, "view"),
+      ]);
+      return {
+        rotate,
+        ref,
+        refStr: ref?.toString() ?? null,
+        userUnit,
+        view,
+      };
     });
 
-    handler.on("GetPageIndex", function (data) {
-      const pageRef = Ref.get(data.num, data.gen);
-      return pdfManager.ensureCatalog("getPageIndex", [pageRef]);
+    handler.on("GetPageIndex", function ({ num, gen }) {
+      return pdfManager.ensureCatalog("getPageIndex", [Ref.get(num, gen)]);
     });
 
-    handler.on("GetDestinations", function (data) {
+    handler.on("GetDestinations", function () {
       return pdfManager.ensureCatalog("destinations");
     });
 
-    handler.on("GetDestination", function (data) {
-      return pdfManager.ensureCatalog("getDestination", [data.id]);
+    handler.on("GetDestination", function ({ id }) {
+      return pdfManager.ensureCatalog("getDestination", [id]);
     });
 
-    handler.on("GetPageLabels", function (data) {
+    handler.on("GetPageLabels", function () {
       return pdfManager.ensureCatalog("pageLabels");
     });
 
-    handler.on("GetPageLayout", function (data) {
+    handler.on("GetPageLayout", function () {
       return pdfManager.ensureCatalog("pageLayout");
     });
 
-    handler.on("GetPageMode", function (data) {
+    handler.on("GetPageMode", function () {
       return pdfManager.ensureCatalog("pageMode");
     });
 
-    handler.on("GetViewerPreferences", function (data) {
+    handler.on("GetViewerPreferences", function () {
       return pdfManager.ensureCatalog("viewerPreferences");
     });
 
-    handler.on("GetOpenAction", function (data) {
+    handler.on("GetOpenAction", function () {
       return pdfManager.ensureCatalog("openAction");
     });
 
-    handler.on("GetAttachments", function (data) {
+    handler.on("GetAttachments", function () {
       return pdfManager.ensureCatalog("attachments");
     });
 
@@ -476,14 +473,13 @@ class WorkerMessageHandler {
       }
     );
 
-    handler.on("GetDocJSActions", function (data) {
+    handler.on("GetDocJSActions", function () {
       return pdfManager.ensureCatalog("jsActions");
     });
 
-    handler.on("GetPageJSActions", function ({ pageIndex }) {
-      return pdfManager
-        .getPage(pageIndex)
-        .then(page => pdfManager.ensure(page, "jsActions"));
+    handler.on("GetPageJSActions", async function ({ pageIndex }) {
+      const page = await pdfManager.getPage(pageIndex);
+      return pdfManager.ensure(page, "jsActions");
     });
 
     handler.on(
@@ -534,19 +530,19 @@ class WorkerMessageHandler {
       }
     );
 
-    handler.on("GetOutline", function (data) {
+    handler.on("GetOutline", function () {
       return pdfManager.ensureCatalog("documentOutline");
     });
 
-    handler.on("GetOptionalContentConfig", function (data) {
+    handler.on("GetOptionalContentConfig", function () {
       return pdfManager.ensureCatalog("optionalContentConfig");
     });
 
-    handler.on("GetPermissions", function (data) {
+    handler.on("GetPermissions", function () {
       return pdfManager.ensureCatalog("permissions");
     });
 
-    handler.on("GetMetadata", function (data) {
+    handler.on("GetMetadata", function () {
       return Promise.all([
         pdfManager.ensureDoc("documentInfo"),
         pdfManager.ensureCatalog("metadata"),
@@ -554,36 +550,37 @@ class WorkerMessageHandler {
       ]);
     });
 
-    handler.on("GetMarkInfo", function (data) {
+    handler.on("GetMarkInfo", function () {
       return pdfManager.ensureCatalog("markInfo");
     });
 
-    handler.on("GetData", function (data) {
-      return pdfManager.requestLoadedStream().then(stream => stream.bytes);
+    handler.on("GetData", async function () {
+      const stream = await pdfManager.requestLoadedStream();
+      return stream.bytes;
     });
 
-    handler.on("GetAnnotations", function ({ pageIndex, intent }) {
-      return pdfManager.getPage(pageIndex).then(function (page) {
-        const task = new WorkerTask(`GetAnnotations: page ${pageIndex}`);
-        startWorkerTask(task);
+    handler.on("GetAnnotations", async function ({ pageIndex, intent }) {
+      const page = await pdfManager.getPage(pageIndex);
+      const task = new WorkerTask(`GetAnnotations: page ${pageIndex}`);
+      startWorkerTask(task);
 
-        return page.getAnnotationsData(handler, task, intent).finally(() => {
-          finishWorkerTask(task);
-        });
-      });
+      try {
+        return await page.getAnnotationsData(handler, task, intent);
+      } finally {
+        finishWorkerTask(task);
+      }
     });
 
-    handler.on("GetFieldObjects", function (data) {
-      return pdfManager
-        .ensureDoc("fieldObjects")
-        .then(fieldObjects => fieldObjects?.allFields || null);
+    handler.on("GetFieldObjects", async function () {
+      const fieldObjects = await pdfManager.ensureDoc("fieldObjects");
+      return fieldObjects?.allFields || null;
     });
 
-    handler.on("HasJSActions", function (data) {
+    handler.on("HasJSActions", function () {
       return pdfManager.ensureDoc("hasJSActions");
     });
 
-    handler.on("GetCalculationOrderIds", function (data) {
+    handler.on("GetCalculationOrderIds", function () {
       return pdfManager.ensureDoc("calculationOrderIds");
     });
 
@@ -885,106 +882,107 @@ class WorkerMessageHandler {
       }
     );
 
-    handler.on("GetOperatorList", function (data, sink) {
-      const { pageId, pageIndex } = data;
-      pdfManager.getPage(pageId).then(function (page) {
-        const task = new WorkerTask(`GetOperatorList: page ${pageIndex}`);
-        startWorkerTask(task);
+    handler.on(
+      "GetOperatorList",
+      function (
+        { pageId, pageIndex, intent, cacheKey, annotationStorage, modifiedIds },
+        sink
+      ) {
+        pdfManager.getPage(pageId).then(page => {
+          const task = new WorkerTask(`GetOperatorList: page ${pageIndex}`);
+          startWorkerTask(task);
 
-        // NOTE: Keep this condition in sync with the `info` helper function.
-        const start = verbosity >= VerbosityLevel.INFOS ? Date.now() : 0;
+          // NOTE: Keep this condition in sync with the `info` helper function.
+          const start = verbosity >= VerbosityLevel.INFOS ? Date.now() : 0;
 
-        // Pre compile the pdf page and fetch the fonts/images.
-        page
-          .getOperatorList({
-            handler,
-            sink,
-            task,
-            intent: data.intent,
-            cacheKey: data.cacheKey,
-            annotationStorage: data.annotationStorage,
-            modifiedIds: data.modifiedIds,
-            pageIndex,
-          })
-          .then(
-            operatorListInfo => {
-              if (start) {
-                info(
-                  `page=${pageIndex + 1} - getOperatorList: time=` +
-                    `${Date.now() - start}ms, len=${operatorListInfo.length}`
-                );
+          // Pre compile the pdf page and fetch the fonts/images.
+          page
+            .getOperatorList({
+              handler,
+              sink,
+              task,
+              intent,
+              cacheKey,
+              annotationStorage,
+              modifiedIds,
+              pageIndex,
+            })
+            .then(
+              opListInfo => {
+                if (start) {
+                  info(
+                    `page=${pageIndex + 1} - getOperatorList: time=` +
+                      `${Date.now() - start}ms, len=${opListInfo.length}`
+                  );
+                }
+                sink.close();
+              },
+              reason => {
+                if (task.terminated) {
+                  return; // ignoring errors from the terminated thread
+                }
+                sink.error(reason);
               }
-              sink.close();
-            },
-            reason => {
-              if (task.terminated) {
-                return; // ignoring errors from the terminated thread
-              }
-              sink.error(reason);
+            )
+            .finally(() => {
+              finishWorkerTask(task);
+            });
+        });
+      }
+    );
 
-              // TODO: Should `reason` be re-thrown here (currently that casues
-              //       "Uncaught exception: ..." messages in the console)?
-            }
-          )
-          .finally(() => {
-            finishWorkerTask(task);
-          });
-      });
+    handler.on(
+      "GetTextContent",
+      function (
+        { pageId, pageIndex, includeMarkedContent, disableNormalization },
+        sink
+      ) {
+        pdfManager.getPage(pageId).then(page => {
+          const task = new WorkerTask("GetTextContent: page " + pageIndex);
+          startWorkerTask(task);
+
+          // NOTE: Keep this condition in sync with the `info` helper function.
+          const start = verbosity >= VerbosityLevel.INFOS ? Date.now() : 0;
+
+          page
+            .extractTextContent({
+              handler,
+              task,
+              sink,
+              includeMarkedContent,
+              disableNormalization,
+            })
+            .then(
+              () => {
+                if (start) {
+                  info(
+                    `page=${pageIndex + 1} - getTextContent: time=` +
+                      `${Date.now() - start}ms`
+                  );
+                }
+                sink.close();
+              },
+              reason => {
+                if (task.terminated) {
+                  return; // ignoring errors from the terminated thread
+                }
+                sink.error(reason);
+              }
+            )
+            .finally(() => {
+              finishWorkerTask(task);
+            });
+        });
+      }
+    );
+
+    handler.on("GetStructTree", async function ({ pageIndex }) {
+      const page = await pdfManager.getPage(pageIndex);
+      return pdfManager.ensure(page, "getStructTree");
     });
 
-    handler.on("GetTextContent", function (data, sink) {
-      const { pageId, pageIndex, includeMarkedContent, disableNormalization } =
-        data;
-
-      pdfManager.getPage(pageId).then(function (page) {
-        const task = new WorkerTask("GetTextContent: page " + pageIndex);
-        startWorkerTask(task);
-
-        // NOTE: Keep this condition in sync with the `info` helper function.
-        const start = verbosity >= VerbosityLevel.INFOS ? Date.now() : 0;
-
-        page
-          .extractTextContent({
-            handler,
-            task,
-            sink,
-            includeMarkedContent,
-            disableNormalization,
-          })
-          .then(
-            () => {
-              if (start) {
-                info(
-                  `page=${pageIndex + 1} - getTextContent: time=` +
-                    `${Date.now() - start}ms`
-                );
-              }
-              sink.close();
-            },
-            reason => {
-              if (task.terminated) {
-                return; // ignoring errors from the terminated thread
-              }
-              sink.error(reason);
-
-              // TODO: Should `reason` be re-thrown here (currently that casues
-              //       "Uncaught exception: ..." messages in the console)?
-            }
-          )
-          .finally(() => {
-            finishWorkerTask(task);
-          });
-      });
-    });
-
-    handler.on("GetStructTree", function (data) {
-      return pdfManager
-        .getPage(data.pageIndex)
-        .then(page => pdfManager.ensure(page, "getStructTree"));
-    });
-
-    handler.on("FontFallback", function (data) {
-      return pdfManager.fontFallback(data.id, handler);
+    handler.on("FontFallback", function ({ id }) {
+      return pdfManager.fontFallback(id, handler);
     });
 
     if (
@@ -1007,11 +1005,11 @@ class WorkerMessageHandler {
       });
     }
 
-    handler.on("Cleanup", function (data) {
+    handler.on("Cleanup", function () {
       return pdfManager.cleanup(/* manuallyTriggered = */ true);
     });
 
-    handler.on("Terminate", async function (data) {
+    handler.on("Terminate", async function () {
       terminated = true;
 
       const waitOn = [];
@@ -1039,22 +1037,21 @@ class WorkerMessageHandler {
       handler = null;
     });
 
-    handler.on("Ready", function (data) {
+    handler.on("Ready", function () {
       setupDoc(docParams);
       docParams = null; // we don't need docParams anymore -- saving memory.
     });
 
     if (typeof PDFJSDev === "undefined" || PDFJSDev.test("TESTING")) {
-      handler.on("GetXFADatasets", function (data) {
+      handler.on("GetXFADatasets", function () {
         return pdfManager.ensureDoc("xfaDatasets");
       });
-      handler.on("GetStartXRefPos", function (data) {
+      handler.on("GetStartXRefPos", function () {
         return pdfManager.ensureDoc("startXRef");
       });
-      handler.on("GetAnnotArray", function (data) {
-        return pdfManager
-          .getPage(data.pageIndex)
-          .then(page => page.annotations.map(a => a.toString()));
+      handler.on("GetAnnotArray", async function ({ pageIndex }) {
+        const page = await pdfManager.getPage(pageIndex);
+        return page.annotations.map(a => a.toString());
       });
       handler.on("GetWorkerCoverage", function () {
         return globalThis.__coverage__ ?? {};
