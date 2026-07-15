@@ -3126,10 +3126,7 @@ class PopupElement {
   }
 
   get isVisible() {
-    if (this.#commentManager) {
-      return false;
-    }
-    return this.#container.hidden === false;
+    return !this.#commentManager && this.#container.hidden === false;
   }
 }
 

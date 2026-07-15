@@ -141,10 +141,7 @@ function normalizeBlendMode(value, parsingArray = false) {
   }
 
   if (!(value instanceof Name)) {
-    if (parsingArray) {
-      return null;
-    }
-    return "source-over";
+    return parsingArray ? null : "source-over";
   }
   switch (value.name) {
     case "Normal":

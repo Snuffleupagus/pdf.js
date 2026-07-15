@@ -296,10 +296,7 @@ class Ref {
   toString() {
     // This function is hot, so we make the string as compact as possible.
     // |this.gen| is almost always zero, so we treat that case specially.
-    if (this.gen === 0) {
-      return `${this.num}R`;
-    }
-    return `${this.num}R${this.gen}`;
+    return this.gen === 0 ? `${this.num}R` : `${this.num}R${this.gen}`;
   }
 
   static fromString(str) {

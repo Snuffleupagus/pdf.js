@@ -805,10 +805,7 @@ class XRef {
   }
 
   fetchIfRef(obj, suppressEncryption = false) {
-    if (obj instanceof Ref) {
-      return this.fetch(obj, suppressEncryption);
-    }
-    return obj;
+    return obj instanceof Ref ? this.fetch(obj, suppressEncryption) : obj;
   }
 
   fetch(ref, suppressEncryption = false) {
@@ -1005,10 +1002,7 @@ class XRef {
   }
 
   async fetchIfRefAsync(obj, suppressEncryption) {
-    if (obj instanceof Ref) {
-      return this.fetchAsync(obj, suppressEncryption);
-    }
-    return obj;
+    return obj instanceof Ref ? this.fetchAsync(obj, suppressEncryption) : obj;
   }
 
   async fetchAsync(ref, suppressEncryption) {
