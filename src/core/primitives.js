@@ -324,6 +324,13 @@ class Ref {
     }
     const num = parseInt(m[1], 10),
       gen = !m[2] ? 0 : parseInt(m[2], 10);
+    // Re-create the string representation, and re-check the cache, such that an
+    // explicit "{n}R0" argument is correctly mapped to the "{n}R" cache entry.
+    str = gen === 0 ? `${num}R` : `${num}R${gen}`;
+    ref = RefCache.get(str);
+    if (ref) {
+      return ref;
+    }
     // eslint-disable-next-line no-restricted-syntax
     ref = new Ref(str, num, gen);
     RefCache.set(str, ref);

@@ -476,9 +476,10 @@ describe("primitives", function () {
     });
 
     it("should create reference from string representation", function () {
-      expect(Ref.fromString("4R")).toEqual(Ref.get(4, 0));
-      expect(Ref.fromString("4R0")).toEqual(Ref.get(4, 0));
-      expect(Ref.fromString("4R2")).toEqual(Ref.get(4, 2));
+      expect(Ref.fromString("4R")).toBe(Ref.get(4, 0));
+      expect(Ref.fromString("4R0")).toBe(Ref.get(4, 0));
+      expect(Ref.fromString("4R2")).toBe(Ref.get(4, 2));
+      expect(Ref.fromString("4R8")).toBe(Ref.get(4, 8));
     });
 
     it("should not create reference from invalid string representation", function () {
