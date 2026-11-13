@@ -76,6 +76,8 @@ const arabicTypes = [
   "EN", "EN", "EN", "EN", "EN", "EN", "AL", "AL", "AL", "AL", "AL", "AL"
 ];
 
+const NonSpacingMarkRegExp = /[\p{Mn}\p{Me}]/u;
+
 function isOdd(i) {
   return (i & 1) !== 0;
 }
@@ -198,7 +200,12 @@ function bidi(text, startLevel = -1, vertical = false) {
    */
   let lastType = sor;
   for (i = 0; i < strLength; ++i) {
-    if (types[i] === "NSM") {
+    if (
+      types[i] === "NSM" ||
+      (types[i] === "L" &&
+        str.charCodeAt(i) >= 0x0300 &&
+        NonSpacingMarkRegExp.test(chars[i]))
+    ) {
       types[i] = lastType;
     } else {
       lastType = types[i];
