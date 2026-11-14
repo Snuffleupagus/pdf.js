@@ -156,6 +156,13 @@ describe("bidi", function () {
     }
   });
 
+  it("should handle the non-spacing marks outside of the Arabic block (issue 22433)", function () {
+    // Meem, fatha, combining grapheme joiner, reh, sukun.
+    const logical = "مَ\u034fرْ";
+    const visual = [...logical].reverse().join("");
+    expect(bidi(visual).str).toEqual(logical);
+  });
+
   it("should reorder characters correctly per BidiCharacterTest.txt", async function () {
     const content = await readTestFile("BidiCharacterTest.txt");
 
