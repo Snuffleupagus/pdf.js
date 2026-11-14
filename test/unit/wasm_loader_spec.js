@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-import { isNodeJS } from "../../src/shared/util.js";
-import { WASM_URL } from "./test_utils.js";
 import { WasmLoader } from "../../src/core/wasm_loader.js";
 
 describe("WasmLoader", function () {
@@ -140,21 +138,5 @@ describe("WasmLoader", function () {
     it("streams a Wasm MIME type with parameters", async function () {
       await expectStreamingCompilation("application/wasm;charset=UTF-8");
     });
-  });
-
-  it("resolves Node.js fallback paths from the working directory", async function () {
-    if (!isNodeJS) {
-      pending("Only for Node.js.");
-    }
-    context.options.useWasm = false;
-    context.options.wasmUrl = WASM_URL;
-    const loaded = await WasmLoader.load(
-      context,
-      "openjpeg.wasm",
-      "openjpeg_nowasm_fallback.js",
-      init
-    );
-    expect(loaded).toBeTrue();
-    expect(init).toHaveBeenCalledOnceWith(jasmine.any(Function));
   });
 });

@@ -40,6 +40,7 @@ import {
   FontFlags,
   normalizeFontName,
 } from "./fonts_utils.js";
+import { decodeBrotli, WasmLoader } from "./wasm_loader.js";
 import { ErrorFont, Font } from "./fonts.js";
 import {
   getEncoding,
@@ -77,7 +78,6 @@ import {
 import { parseMarkedContentProps, textSinkWrapper } from "./evaluator_utils.js";
 import { BaseStream } from "./base_stream.js";
 import { bidi } from "./bidi.js";
-import { BrotliStream } from "./brotli_stream.js";
 import { CharCodeMap } from "./char_code_map.js";
 import { ColorSpace } from "./colorspace.js";
 import { ColorSpaceUtils } from "./colorspace_utils.js";
@@ -91,7 +91,6 @@ import { MurmurHash3_64 } from "../shared/murmurhash3.js";
 import { PDFImage } from "./image.js";
 import { Stream } from "./stream.js";
 import { stringToPDFString } from "./string_utils.js";
-import { WasmLoader } from "./wasm_loader.js";
 
 const DefaultPartialEvaluatorOptions = Object.freeze({
   disableFontFace: false,
@@ -411,8 +410,7 @@ class PartialEvaluator {
       `${name}${cMapPacked ? ".bcmap.br" : ""}`
     );
     if (cMapPacked) {
-      const stream = new BrotliStream(new Stream(cMapData), cMapData.length);
-      cMapData = (await stream.asyncGetBytes()) ?? stream.getBytes();
+      cMapData = await decodeBrotli(cMapData);
     }
     return { cMapData, cMapPacked };
   }

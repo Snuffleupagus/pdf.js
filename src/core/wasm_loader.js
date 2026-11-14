@@ -13,7 +13,15 @@
  * limitations under the License.
  */
 
-import { isNodeJS, warn } from "../shared/util.js";
+import { BrotliStream } from "./brotli_stream.js";
+import { Stream } from "./stream.js";
+import { warn } from "../shared/util.js";
+
+// Attempt native decoding first, and fallback to the JS decoder.
+async function decodeBrotli(data) {
+  const stream = new BrotliStream(new Stream(data), data.length);
+  return (await stream.asyncGetBytes()) ?? stream.getBytes();
+}
 
 class WasmLoader {
   static #modules = new Map();
@@ -27,13 +35,17 @@ class WasmLoader {
    */
   static async fetch(context, kind, filename) {
     const { handler, options } = context;
-    if (options.useWorkerFetch) {
-      return (await this.#workerFetch(options[kind], filename)).bytes();
+    if (
+      (typeof PDFJSDev === "undefined" || !PDFJSDev.test("MOZCENTRAL")) &&
+      !options.useWorkerFetch
+    ) {
+      return handler.sendWithPromise("FetchBinaryData", {
+        kind,
+        filename,
+      });
     }
-    if (typeof PDFJSDev !== "undefined" && PDFJSDev.test("MOZCENTRAL")) {
-      throw new Error("Only worker-thread fetching supported.");
-    }
-    return handler.sendWithPromise("FetchBinaryData", { kind, filename });
+    const response = await this.#workerFetch(options[kind], filename);
+    return response.bytes();
   }
 
   static async #workerFetch(baseUrl, filename) {
@@ -81,33 +93,26 @@ class WasmLoader {
     return promise;
   }
 
-  static async #importFallback(wasmUrl, filename) {
+  static async #importFallback(context, wasmUrl, filename) {
+    let source;
     if (typeof PDFJSDev !== "undefined" && PDFJSDev.test("MOZCENTRAL")) {
       const { body } = await this.#workerFetch(wasmUrl, `${filename}.br`);
-      const stream = body.pipeThrough(new DecompressionStream("brotli"));
-      const blob = await new Response(stream, {
-        headers: { "Content-Type": "text/javascript" },
-      }).blob();
-      const url = URL.createObjectURL(blob);
-      try {
-        return await __raw_import__(url);
-      } finally {
-        URL.revokeObjectURL(url);
-      }
+      source = body.pipeThrough(new DecompressionStream("brotli"));
+    } else {
+      const data = await this.fetch(context, "wasmUrl", `${filename}.br`);
+      source = await decodeBrotli(data);
     }
-    if (typeof PDFJSDev === "undefined") {
-      // eslint-disable-next-line no-unsanitized/method
-      return import(`../${wasmUrl}${filename}`);
+    const blob = await new Response(source, {
+      headers: { "Content-Type": "text/javascript" },
+    }).blob();
+    const url = URL.createObjectURL(blob);
+    try {
+      return typeof PDFJSDev === "undefined"
+        ? await import(url) // eslint-disable-line no-unsanitized/method
+        : await __raw_import__(url);
+    } finally {
+      URL.revokeObjectURL(url);
     }
-    if (
-      PDFJSDev.test("GENERIC") &&
-      isNodeJS &&
-      !/^[a-z][a-z0-9\-+.]+:/i.test(wasmUrl)
-    ) {
-      // eslint-disable-next-line no-undef
-      wasmUrl = process.getBuiltinModule("url").pathToFileURL(wasmUrl).href;
-    }
-    return __raw_import__(`${wasmUrl}${filename}`);
   }
 
   /**
@@ -132,6 +137,7 @@ class WasmLoader {
     if (wasmUrl) {
       try {
         const { default: instantiate } = await this.#importFallback(
+          context,
           wasmUrl,
           noWasmFilename
         );
@@ -145,4 +151,4 @@ class WasmLoader {
   }
 }
 
-export { WasmLoader };
+export { decodeBrotli, WasmLoader };
