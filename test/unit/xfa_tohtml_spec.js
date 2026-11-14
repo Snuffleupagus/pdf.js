@@ -13,7 +13,10 @@
  * limitations under the License.
  */
 
+import { isNodeJS } from "../../src/shared/util.js";
+import { PDFLinkService } from "../../web/pdf_link_service.js";
 import { XFAFactory } from "../../src/core/xfa/factory.js";
+import { XfaLayer } from "../../src/display/xfa_layer.js";
 
 describe("XFAFactory", function () {
   function searchHtmlNode(root, name, value, byAttributes = false, nth = [0]) {
@@ -591,6 +594,56 @@ describe("XFAFactory", function () {
     a = searchHtmlNode(pages, "name", "a");
     expect(a.value).toEqual("qwerty/");
     expect(a.attributes.href).toEqual("");
+  });
+
+  it("should render a rich text link with an invalid URL", async () => {
+    if (isNodeJS) {
+      pending("DOM is not supported in Node.js.");
+    }
+    const xml = `
+<?xml version="1.0"?>
+<xdp:xdp xmlns:xdp="http://ns.adobe.com/xdp/">
+  <template xmlns="http://www.xfa.org/schema/xfa-template/3.3">
+    <subform name="root" mergeMode="matchTemplate">
+      <pageSet>
+        <pageArea>
+          <contentArea x="0pt" w="456pt" h="789pt"/>
+          <medium stock="default" short="456pt" long="789pt"/>
+          <draw name="url" y="5.928mm" x="128.388mm" w="71.237mm" h="9.528mm">
+            <value>
+              <exData contentType="text/html">
+                <body xmlns="http://www.w3.org/1999/xhtml">
+                  <p><a href="javascript:alert(1)">jslink</a> after</p>
+                </body>
+              </exData>
+            </value>
+          </draw>
+        </pageArea>
+      </pageSet>
+    </subform>
+  </template>
+  <xfa:datasets xmlns:xfa="http://www.xfa.org/schema/xfa-data/1.0/">
+    <xfa:data>
+    </xfa:data>
+  </xfa:datasets>
+</xdp:xdp>
+    `;
+    const factory = new XFAFactory(new Map([["xdp:xdp", xml]]));
+    expect(await factory.getNumPages()).toEqual(1);
+    const pages = await factory.getPages();
+
+    const div = document.createElement("div");
+    XfaLayer.render({
+      xfaHtml: pages.children[0],
+      div,
+      linkService: new PDFLinkService(),
+      intent: "display",
+    });
+
+    const a = div.querySelector("a");
+    expect(a.textContent).toEqual("jslink");
+    expect(a.hasAttribute("href")).toBeFalse();
+    expect(a.parentNode.textContent).toEqual("jslink after");
   });
 
   it("should replace button with an URL by a link", async () => {
